@@ -201,43 +201,56 @@ function Register() {
     setIsSubmitting(true)
 
     try {
-      let dataNascimento = '';
-      
-      // Verificar se todos os campos obrigatórios estão preenchidos
-      // Só valida e formata a data de nascimento se for pessoa física e o campo estiver preenchido
-      if (accountType === 'pf') {
-        if (!birth) {
-          throw new Error('Data de nascimento é obrigatória para pessoa física');
-        }
-        
-        // Formatar a data para YYYY-MM-DD
-        const [day, month, year] = birth.split('/');
-        if (!day || !month || !year || year.length !== 4) {
-          throw new Error('Data de nascimento inválida. Use o formato DD/MM/AAAA');
-        }
-        
-        dataNascimento = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-      }
-      
       // Formatar CEP (apenas números)
       const formattedCep = cep.replace(/\D/g, '');
       if (formattedCep.length !== 8) {
         throw new Error('CEP deve ter 8 dígitos');
       }
       
-      const userData = {
+      // Validar se logradouro (rua) está preenchido
+      if (!rua || rua.trim() === '') {
+        throw new Error('Logradouro (rua) é obrigatório');
+      }
+
+      const userData: any = {
         nome: nickname,
         email,
         senha: password,
-        cpfCnpj: cpfCnpj.replace(/\D/g, ''), // Se o backend esperar cpf_cnpj, precisaremos ajustar isso também
+        cpfCnpj: cpfCnpj.replace(/\D/g, ''),
         telefone: telefone.replace(/\D/g, ''),
-        data_nascimento: dataNascimento, // Nome do campo alterado para corresponder ao banco
         cep: formattedCep,
-        estado,
-        cidade,
-        rua,
-        numero: parseInt(numero) || 0
+        logradouro: rua.trim(),
+        numero: numero || '0', // Backend espera String
       };
+
+      // Data de nascimento: obrigatória para PF, formato dd/MM/yyyy (como o backend espera)
+      if (accountType === 'pf') {
+        if (!birth) {
+          throw new Error('Data de nascimento é obrigatória para pessoa física');
+        }
+        
+        // Validar formato DD/MM/YYYY
+        const [day, month, year] = birth.split('/');
+        if (!day || !month || !year || year.length !== 4) {
+          throw new Error('Data de nascimento inválida. Use o formato DD/MM/AAAA');
+        }
+        
+        // Backend espera formato dd/MM/yyyy (mantém como está, sem conversão)
+        userData.dataNascimento = birth;
+      }
+
+      // Campos opcionais de endereço
+      if (cidade && cidade.trim()) {
+        userData.cidade = cidade.trim();
+      }
+      if (estado && estado.trim()) {
+        userData.uf = estado.trim(); // Backend espera 'uf', não 'estado'
+      }
+
+      // Campo isMei para pessoa jurídica
+      if (accountType === 'pj' && isMei) {
+        userData.isMei = true;
+      }
       
       console.log('Enviando dados:', userData);
       
@@ -248,13 +261,11 @@ function Register() {
         title: 'Cadastro realizado com sucesso!',
         message: (
           <>
-            Seu cadastro foi concluído com sucesso. 
-            <Link to="/login" className="text-orange-500 hover:underline font-medium ml-1">
-              Clique aqui para fazer login
-            </Link>
+            Um email de verificação foi enviado para <strong>{email}</strong>. 
+            Por favor, verifique sua caixa de entrada e clique no link para ativar sua conta.
           </>
         ),
-        showFor: 10000
+        showFor: 15000
       })
       
       localStorage.setItem('lastRegisteredEmail', email)

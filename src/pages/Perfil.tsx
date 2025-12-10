@@ -50,12 +50,24 @@ export default function Perfil() {
       setIsSaving(true);
       
       // Prepara dados para atualização
-      // Baseado no Swagger: apenas nome, telefone e cep podem ser alterados
-      const updateData = {
+      const updateData: any = {
         nome: userData.nome,
         telefone: userData.telefone,
         cep: userData.cep,
+        logradouro: userData.logradouro,
+        numero: userData.numero,
+        bairro: userData.bairro,
+        cidade: userData.cidade,
+        uf: userData.uf || userData.estado,  // Usa 'uf' se disponível, senão 'estado'
+        complemento: userData.complemento,
       };
+
+      // Adiciona dataNascimento se existir (converte para formato dd/MM/yyyy que o backend espera)
+      if (userData.dataNascimento && userData.dataNascimento.trim()) {
+        const dateValue = userData.dataNascimento.trim();
+        // Converte para o formato que o backend espera (dd/MM/yyyy)
+        updateData.dataNascimento = parseDateForBackend(dateValue);
+      }
 
       await updateCurrentUser(updateData);
       
@@ -82,6 +94,36 @@ export default function Perfil() {
 
   // Formatar data para exibição (YYYY-MM-DD -> DD/MM/YYYY)
   const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    try {
+      const [year, month, day] = dateString.split('-');
+      return `${day}/${month}/${year}`;
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Converter data de YYYY-MM-DD para dd/MM/yyyy (formato do backend)
+  const parseDateForBackend = (dateString: string): string => {
+    if (!dateString) return '';
+    try {
+      // Se já está no formato dd/MM/yyyy, retorna como está
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+        return dateString;
+      }
+      // Se está no formato YYYY-MM-DD, converte para dd/MM/yyyy
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        const [year, month, day] = dateString.split('-');
+        return `${day}/${month}/${year}`;
+      }
+    } catch {
+      // Se não conseguir fazer parse, retorna como está
+    }
+    return dateString;
+  };
+
+  // Formatar data para input (YYYY-MM-DD -> DD/MM/YYYY)
+  const formatDateForInput = (dateString?: string) => {
     if (!dateString) return '';
     try {
       const [year, month, day] = dateString.split('-');
@@ -183,15 +225,40 @@ export default function Perfil() {
                   )}
                 </div>
 
-                {/* Data de Nascimento - Somente leitura (mostra se for pessoa física) */}
+                {/* Data de Nascimento - Editável (mostra se for pessoa física) */}
                 {userData.cpfCnpj && userData.cpfCnpj.replace(/\D/g, '').length === 11 && (
                   <div>
                     <label htmlFor="dataNascimento" className="block text-sm font-medium text-gray-700">
                       Data de Nascimento
                     </label>
-                    <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded-md">
-                      {userData.dataNascimento ? formatDate(userData.dataNascimento) : 'Não informado'}
-                    </p>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="dataNascimento"
+                        id="dataNascimento"
+                        value={userData.dataNascimento ? formatDateForInput(userData.dataNascimento) : ''}
+                        onChange={(e) => {
+                          // Formata enquanto digita (DD/MM/YYYY)
+                          const value = e.target.value.replace(/\D/g, '');
+                          let formatted = value;
+                          if (value.length > 2) {
+                            formatted = value.slice(0, 2) + '/' + value.slice(2);
+                          }
+                          if (value.length > 4) {
+                            formatted = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
+                          }
+                          setUserData(prev => ({
+                            ...prev,
+                            dataNascimento: formatted
+                          }));
+                        }}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                        placeholder="DD/MM/AAAA"
+                        maxLength={10}
+                      />
+                    ) : (
+                      <p className="mt-1 text-gray-900">{userData.dataNascimento ? formatDate(userData.dataNascimento) : 'Não informado'}</p>
+                    )}
                   </div>
                 )}
 
@@ -232,64 +299,126 @@ export default function Perfil() {
                       )}
                     </div>
 
-                    {/* Logradouro - Somente leitura */}
+                    {/* Logradouro */}
                     <div className="md:col-span-2">
                       <label htmlFor="logradouro" className="block text-sm font-medium text-gray-700">
                         Logradouro (Rua)
                       </label>
-                      <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded-md">
-                        {userData.logradouro || 'Não informado'}
-                      </p>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="logradouro"
+                          id="logradouro"
+                          value={userData.logradouro || ''}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                        />
+                      ) : (
+                        <p className="mt-1 text-gray-900">{userData.logradouro || 'Não informado'}</p>
+                      )}
                     </div>
 
-                    {/* Número - Somente leitura */}
+                    {/* Número */}
                     <div>
                       <label htmlFor="numero" className="block text-sm font-medium text-gray-700">
                         Número
                       </label>
-                      <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded-md">
-                        {userData.numero || 'Não informado'}
-                      </p>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="numero"
+                          id="numero"
+                          value={userData.numero || ''}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                        />
+                      ) : (
+                        <p className="mt-1 text-gray-900">{userData.numero || 'Não informado'}</p>
+                      )}
                     </div>
 
-                    {/* Complemento - Somente leitura */}
+                    {/* Complemento */}
                     <div>
                       <label htmlFor="complemento" className="block text-sm font-medium text-gray-700">
                         Complemento
                       </label>
-                      <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded-md">
-                        {userData.complemento || 'Não informado'}
-                      </p>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="complemento"
+                          id="complemento"
+                          value={userData.complemento || ''}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                        />
+                      ) : (
+                        <p className="mt-1 text-gray-900">{userData.complemento || 'Não informado'}</p>
+                      )}
                     </div>
 
-                    {/* Bairro - Somente leitura */}
+                    {/* Bairro */}
                     <div>
                       <label htmlFor="bairro" className="block text-sm font-medium text-gray-700">
                         Bairro
                       </label>
-                      <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded-md">
-                        {userData.bairro || 'Não informado'}
-                      </p>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="bairro"
+                          id="bairro"
+                          value={userData.bairro || ''}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                        />
+                      ) : (
+                        <p className="mt-1 text-gray-900">{userData.bairro || 'Não informado'}</p>
+                      )}
                     </div>
 
-                    {/* Cidade - Somente leitura */}
+                    {/* Cidade */}
                     <div>
                       <label htmlFor="cidade" className="block text-sm font-medium text-gray-700">
                         Cidade
                       </label>
-                      <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded-md">
-                        {userData.cidade || 'Não informado'}
-                      </p>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="cidade"
+                          id="cidade"
+                          value={userData.cidade || ''}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                        />
+                      ) : (
+                        <p className="mt-1 text-gray-900">{userData.cidade || 'Não informado'}</p>
+                      )}
                     </div>
 
-                    {/* Estado - Somente leitura */}
+                    {/* Estado (UF) */}
                     <div>
-                      <label htmlFor="estado" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="uf" className="block text-sm font-medium text-gray-700">
                         Estado (UF)
                       </label>
-                      <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded-md">
-                        {userData.estado || 'Não informado'}
-                      </p>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="uf"
+                          id="uf"
+                          value={userData.uf || userData.estado || ''}
+                          onChange={(e) => {
+                            setUserData(prev => ({
+                              ...prev,
+                              uf: e.target.value.toUpperCase(),
+                              estado: e.target.value.toUpperCase()  // Mantém sincronizado
+                            }));
+                          }}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                          placeholder="Ex: SP"
+                          maxLength={2}
+                        />
+                      ) : (
+                        <p className="mt-1 text-gray-900">{userData.uf || userData.estado || 'Não informado'}</p>
+                      )}
                     </div>
                   </div>
                 </div>

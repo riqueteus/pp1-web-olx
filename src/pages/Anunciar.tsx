@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getAuthData } from '../utils/auth';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { createProduto, updateProduto, uploadProdutoImagem, getProdutoById, type CategoriaProduto, type CondicaoProduto } from '../services/produtos';
+import { getCurrentUser } from '../services/auth';
 
 type FormData = {
   title: string;
@@ -9,34 +10,132 @@ type FormData = {
   price: string;
   category: string;
   condition: 'new' | 'used' | 'semi-new';
+  caracteristica1: string;
+  caracteristica2: string;
+  caracteristica3: string;
 };
 
 export default function Anunciar() {
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('edit');
+  const isEditMode = !!editId;
+
   const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
     price: '',
     category: '',
     condition: 'used',
+    caracteristica1: '',
+    caracteristica2: '',
+    caracteristica3: '',
   });
-  const [images, setImages] = useState<File[]>([]);
+  const [image, setImage] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(isEditMode);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
+  // Mapeamento de categorias do frontend para o backend
+  const categoriaMap: Record<string, CategoriaProduto> = {
+    'Celulares': 'CELULAR_TELEFONIA',
+    'Eletrodomésticos': 'ELETRODOMESTICOS',
+    'Casa': 'CASA_DECORACAO_UTENSILIOS',
+    'Moda': 'MODA',
+  };
+
   const categories = [
-    'Eletrônicos',
-    'Celulares',
-    'Informática',
-    'Casa',
-    'Esporte',
-    'Moda',
-    'Veículos',
-    'Imóveis',
-    'Outros'
+    { value: 'Celulares', label: 'Celular e Telefonia' },
+    { value: 'Eletrodomésticos', label: 'Eletrodomésticos' },
+    { value: 'Casa', label: 'Casa, Decoração e Utensílios' },
+    { value: 'Moda', label: 'Moda' },
   ];
+
+  // Características por categoria
+  const caracteristicasPorCategoria: Record<string, { label1: string; label2: string; label3: string }> = {
+    'Celulares': {
+      label1: 'Marca',
+      label2: 'Modelo',
+      label3: 'Capacidade de Armazenamento'
+    },
+    'Eletrodomésticos': {
+      label1: 'Marca',
+      label2: 'Modelo',
+      label3: 'Voltagem'
+    },
+    'Casa': {
+      label1: 'Material',
+      label2: 'Dimensões',
+      label3: 'Cor'
+    },
+    'Moda': {
+      label1: 'Tamanho',
+      label2: 'Marca',
+      label3: 'Cor'
+    }
+  };
+
+  // Mapeamento reverso de categorias (backend -> frontend)
+  const categoriaReverseMap: Record<CategoriaProduto, string> = {
+    'CELULAR_TELEFONIA': 'Celulares',
+    'ELETRODOMESTICOS': 'Eletrodomésticos',
+    'CASA_DECORACAO_UTENSILIOS': 'Casa',
+    'MODA': 'Moda',
+  };
+
+  // Carregar dados do produto quando estiver em modo edição
+  useEffect(() => {
+    const loadProductData = async () => {
+      if (!isEditMode || !editId) return;
+
+      try {
+        setLoading(true);
+        const produto = await getProdutoById(Number(editId));
+
+        const categoriaFrontend = categoriaReverseMap[produto.categoriaProduto] || '';
+        
+        // Preencher formulário com dados do produto
+        const newFormData: FormData = {
+          title: produto.nome || '',
+          description: produto.descricao || '',
+          price: produto.preco ? produto.preco.toFixed(2).replace('.', ',') : '',
+          category: categoriaFrontend,
+          condition: produto.condicao === 'NOVO' ? 'new' : 'used',
+          caracteristica1: '',
+          caracteristica2: '',
+          caracteristica3: '',
+        };
+
+        // Preencher características se existirem
+        if (produto.caracteristicas && categoriaFrontend) {
+          const categoriaLabels = caracteristicasPorCategoria[categoriaFrontend];
+          if (categoriaLabels) {
+            const caracteristicas = produto.caracteristicas as Record<string, string>;
+            newFormData.caracteristica1 = caracteristicas[categoriaLabels.label1] || '';
+            newFormData.caracteristica2 = caracteristicas[categoriaLabels.label2] || '';
+            newFormData.caracteristica3 = caracteristicas[categoriaLabels.label3] || '';
+          }
+        }
+
+        setFormData(newFormData);
+
+        // Carregar preview da imagem existente (se houver)
+        if (produto.imagem) {
+          const imageUrl = `http://localhost:8080/api/produtos/imagens/${encodeURIComponent(produto.imagem)}`;
+          setPreviewUrl(imageUrl);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar produto:', err);
+        setError('Erro ao carregar dados do produto. Tente novamente.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProductData();
+  }, [isEditMode, editId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -47,96 +146,138 @@ export default function Anunciar() {
   };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
       
-      // Check if adding these files would exceed 10 images
-      if (images.length + files.length > 10) {
-        setError('Você pode adicionar no máximo 10 imagens');
-        return;
+      // Revogar URL anterior se existir
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
       }
       
-      // Create preview URLs
-      const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+      // Criar preview URL
+      const newPreviewUrl = URL.createObjectURL(file);
       
-      setImages(prev => [...prev, ...files]);
-      setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+      setImage(file);
+      setPreviewUrl(newPreviewUrl);
+      setError(''); // Limpar erro se houver
     }
   };
 
-  const removeImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
-    setPreviewUrls(prev => {
-      const newUrls = [...prev];
-      URL.revokeObjectURL(newUrls[index]);
-      newUrls.splice(index, 1);
-      return newUrls;
-    });
+  const removeImage = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setImage(null);
+    setPreviewUrl(null);
+    // Limpar o input de arquivo
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    // Basic validation
+    // Validação básica
     if (!formData.title.trim() || !formData.description.trim() || !formData.price) {
       setError('Preencha todos os campos obrigatórios');
       return;
     }
     
-    if (images.length === 0) {
-      setError('Adicione pelo menos uma imagem do produto');
+    if (!formData.category) {
+      setError('Selecione uma categoria');
+      return;
+    }
+    
+    // Em modo de criação, exigir uma imagem
+    if (!isEditMode && !image) {
+      setError('Adicione uma imagem do produto');
       return;
     }
 
     setIsSubmitting(true);
     
     try {
-      const userData = getAuthData();
-      if (!userData) {
-        throw new Error('Usuário não autenticado');
+      // Converter preço para número (aceita vírgula ou ponto como separador decimal)
+      const precoStr = formData.price.replace(/[^\d,.]/g, '').replace(',', '.');
+      const preco = parseFloat(precoStr);
+      if (isNaN(preco) || preco <= 0) {
+        throw new Error('Preço inválido. Informe um valor maior que zero.');
       }
+
+      // Mapear condição do frontend para o backend
+      const condicao: CondicaoProduto = formData.condition === 'new' ? 'NOVO' : 'USADO';
+
+      // Mapear categoria do frontend para o backend
+      const categoriaProduto = categoriaMap[formData.category];
+      if (!categoriaProduto) {
+        throw new Error('Categoria inválida');
+      }
+
+      // Construir objeto de características
+      const caracteristicas: Record<string, string> = {};
+      const categoriaLabels = caracteristicasPorCategoria[formData.category];
       
-      // In a real app, you would upload the images to a storage service
-      // and then send the form data along with the image URLs to your backend
-      const formDataToSend = new FormData();
-      
-      // Append form data
-      Object.entries(formData).forEach(([key, value]) => {
-        formDataToSend.append(key, value);
-      });
-      
-      // Append images
-      images.forEach((image, index) => {
-        formDataToSend.append(`image${index}`, image);
-      });
-      
-      // Example API call (commented out as we don't have a real endpoint)
-      // const response = await fetch('/api/ads', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-      //   },
-      //   body: formDataToSend
-      // });
-      
-      // if (!response.ok) {
-      //   throw new Error('Erro ao publicar anúncio');
-      // }
-      
-      // For demo purposes, we'll just log the form data and navigate to the home page
-      console.log('Form data to submit:', {
-        ...formData,
-        images: images.map(img => img.name)
-      });
-      
-      // Show success message and redirect to home
-      alert('Anúncio publicado com sucesso!');
-      navigate('/');
+      if (categoriaLabels) {
+        if (formData.caracteristica1.trim()) {
+          caracteristicas[categoriaLabels.label1] = formData.caracteristica1.trim();
+        }
+        if (formData.caracteristica2.trim()) {
+          caracteristicas[categoriaLabels.label2] = formData.caracteristica2.trim();
+        }
+        if (formData.caracteristica3.trim()) {
+          caracteristicas[categoriaLabels.label3] = formData.caracteristica3.trim();
+        }
+      }
+
+      if (isEditMode && editId) {
+        // Modo de edição - atualizar produto existente
+        await updateProduto(Number(editId), {
+          nome: formData.title.trim(),
+          descricao: formData.description.trim(),
+          condicao,
+          preco,
+          categoriaProduto,
+          caracteristicas: Object.keys(caracteristicas).length > 0 ? caracteristicas : undefined,
+        });
+
+        // Upload de nova imagem se houver
+        if (image) {
+          await uploadProdutoImagem(Number(editId), image);
+        }
+      } else {
+        // Modo de criação - criar novo produto
+        const userData = await getCurrentUser();
+        if (!userData || !userData.id) {
+          throw new Error('Usuário não autenticado');
+        }
+
+        const produto = await createProduto(userData.id, {
+          nome: formData.title.trim(),
+          descricao: formData.description.trim(),
+          condicao,
+          preco,
+          categoriaProduto,
+          caracteristicas: Object.keys(caracteristicas).length > 0 ? caracteristicas : undefined,
+        });
+
+        // Upload da imagem
+        if (image) {
+          await uploadProdutoImagem(produto.id!, image);
+        }
+      }
+
+      // Sucesso - redirecionar para meus anúncios
+      navigate('/meus-anuncios');
       
     } catch (error) {
-      console.error('Erro ao publicar anúncio:', error);
-      setError('Ocorreu um erro ao publicar o anúncio. Tente novamente.');
+      console.error(`Erro ao ${isEditMode ? 'atualizar' : 'publicar'} anúncio:`, error);
+      if (error instanceof Error) {
+        setError(error.message || `Ocorreu um erro ao ${isEditMode ? 'atualizar' : 'publicar'} o anúncio. Tente novamente.`);
+      } else {
+        setError(`Ocorreu um erro ao ${isEditMode ? 'atualizar' : 'publicar'} o anúncio. Tente novamente.`);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -147,8 +288,12 @@ export default function Anunciar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Criar Anúncio</h1>
-            <p className="mt-1 text-sm text-gray-600">Preencha os detalhes do seu anúncio</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {isEditMode ? 'Editar Anúncio' : 'Criar Anúncio'}
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">
+              {isEditMode ? 'Atualize os detalhes do seu anúncio' : 'Preencha os detalhes do seu anúncio'}
+            </p>
           </div>
 
           <div className="px-6 py-6">
@@ -158,7 +303,12 @@ export default function Anunciar() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit}>
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">Carregando dados do produto...</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 {/* Title */}
                 <div>
@@ -192,8 +342,8 @@ export default function Anunciar() {
                   >
                     <option value="">Selecione uma categoria</option>
                     {categories.map(category => (
-                      <option key={category} value={category}>
-                        {category}
+                      <option key={category.value} value={category.value}>
+                        {category.label}
                       </option>
                     ))}
                   </select>
@@ -215,17 +365,6 @@ export default function Anunciar() {
                         className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300"
                       />
                       <span className="ml-2 text-sm text-gray-700">Novo</span>
-                    </label>
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        name="condition"
-                        value="semi-new"
-                        checked={formData.condition === 'semi-new'}
-                        onChange={handleInputChange}
-                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">Semi-novo</span>
                     </label>
                     <label className="inline-flex items-center">
                       <input
@@ -285,37 +424,86 @@ export default function Anunciar() {
                   </p>
                 </div>
 
-                {/* Images */}
+                {/* Características - Exibidas dinamicamente baseado na categoria */}
+                {formData.category && caracteristicasPorCategoria[formData.category] && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-gray-900">Características do Produto</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label htmlFor="caracteristica1" className="block text-sm font-medium text-gray-700">
+                          {caracteristicasPorCategoria[formData.category].label1}
+                        </label>
+                        <input
+                          type="text"
+                          id="caracteristica1"
+                          name="caracteristica1"
+                          value={formData.caracteristica1}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                          placeholder={`Ex: ${caracteristicasPorCategoria[formData.category].label1}`}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="caracteristica2" className="block text-sm font-medium text-gray-700">
+                          {caracteristicasPorCategoria[formData.category].label2}
+                        </label>
+                        <input
+                          type="text"
+                          id="caracteristica2"
+                          name="caracteristica2"
+                          value={formData.caracteristica2}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                          placeholder={`Ex: ${caracteristicasPorCategoria[formData.category].label2}`}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="caracteristica3" className="block text-sm font-medium text-gray-700">
+                          {caracteristicasPorCategoria[formData.category].label3}
+                        </label>
+                        <input
+                          type="text"
+                          id="caracteristica3"
+                          name="caracteristica3"
+                          value={formData.caracteristica3}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                          placeholder={`Ex: ${caracteristicasPorCategoria[formData.category].label3}`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Image */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Fotos <span className="text-red-500">*</span>
+                    Foto {!isEditMode && <span className="text-red-500">*</span>}
                   </label>
                   <p className="text-sm text-gray-500 mb-2">
-                    Adicione até 10 fotos. A primeira foto será a foto de capa.
+                    {isEditMode 
+                      ? 'Adicione uma nova foto. A foto existente será substituída.'
+                      : 'Adicione uma foto do produto.'}
                   </p>
                   
-                  {/* Image preview grid */}
-                  {previewUrls.length > 0 && (
-                    <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4">
-                      {previewUrls.map((url, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={url}
-                            alt={`Preview ${index + 1}`}
-                            className="h-32 w-full object-cover rounded-md"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Remover imagem"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
+                  {/* Image preview */}
+                  {previewUrl && (
+                    <div className="mt-2 mb-4 relative inline-block">
+                      <img
+                        src={previewUrl}
+                        alt="Preview"
+                        className="h-48 w-auto object-cover rounded-md"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
+                        title="Remover imagem"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                     </div>
                   )}
                   
@@ -347,7 +535,6 @@ export default function Anunciar() {
                             name="file-upload"
                             type="file"
                             className="sr-only"
-                            multiple
                             accept="image/*"
                             onChange={handleImageChange}
                             ref={fileInputRef}
@@ -383,12 +570,13 @@ export default function Anunciar() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Publicando...
+                      {isEditMode ? 'Atualizando...' : 'Publicando...'}
                     </>
-                  ) : 'Publicar anúncio'}
+                  ) : (isEditMode ? 'Atualizar anúncio' : 'Publicar anúncio')}
                 </button>
               </div>
-            </form>
+              </form>
+            )}
           </div>
         </div>
       </div>

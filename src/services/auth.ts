@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8080'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export type RegisterVendorPayload = {
   nome: string
@@ -120,9 +120,10 @@ export type UserData = {
   // Campos de endereço no nível raiz (como o backend espera/recebe)
   cep?: string
   logradouro?: string
-  numero?: number
+  numero?: string  // Backend espera String
   cidade?: string
-  estado?: string
+  uf?: string  // Backend espera 'uf', não 'estado'
+  estado?: string  // Mantido para compatibilidade
   bairro?: string
   complemento?: string
   // Mantém compatibilidade com objeto aninhado (caso backend retorne assim)
@@ -138,11 +139,17 @@ export type UserData = {
 }
 
 // Tipo para atualização de usuário
-// Baseado no Swagger: apenas nome, telefone e cep podem ser alterados
 export type UpdateUserPayload = {
   nome?: string
   telefone?: string
+  dataNascimento?: string  // Formato dd/MM/yyyy (como o backend espera)
   cep?: string
+  logradouro?: string
+  numero?: string
+  bairro?: string
+  cidade?: string
+  uf?: string
+  complemento?: string
 }
 
 // Função auxiliar para adicionar token de autenticação
@@ -175,26 +182,33 @@ export async function getCurrentUser(): Promise<UserData> {
     // Campos de endereço: pega do objeto endereco se existir, senão do nível raiz
     cep: endereco.cep || data.cep,
     logradouro: endereco.logradouro || data.logradouro,
-    numero: (endereco.numero !== undefined && endereco.numero !== null) ? endereco.numero : ((data.numero !== undefined && data.numero !== null) ? data.numero : undefined),
+    numero: (endereco.numero !== undefined && endereco.numero !== null) ? String(endereco.numero) : ((data.numero !== undefined && data.numero !== null) ? String(data.numero) : undefined),
     cidade: endereco.cidade || data.cidade,
-    estado: endereco.estado || data.estado,
+    uf: endereco.estado || data.uf || data.estado,  // Prioriza 'uf', depois 'estado'
+    estado: endereco.estado || data.uf || data.estado,  // Mantido para compatibilidade
     bairro: endereco.bairro || data.bairro,
     complemento: endereco.complemento || data.complemento,
   };
 }
 
 // Atualizar dados do usuário logado
-// Baseado no Swagger: apenas nome, telefone e cep podem ser alterados
 export async function updateCurrentUser(data: UpdateUserPayload): Promise<UserData> {
   const payload: any = {
     nome: data.nome,
     telefone: data.telefone,
+    dataNascimento: data.dataNascimento,
     cep: data.cep,
+    logradouro: data.logradouro,
+    numero: data.numero,
+    bairro: data.bairro,
+    cidade: data.cidade,
+    uf: data.uf,
+    complemento: data.complemento,
   };
   
-  // Remove campos undefined/null
+  // Remove campos undefined/null ou vazios
   Object.keys(payload).forEach(key => {
-    if (payload[key] === undefined || payload[key] === null) {
+    if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
       delete payload[key];
     }
   });
@@ -206,6 +220,86 @@ export async function updateCurrentUser(data: UpdateUserPayload): Promise<UserDa
   });
   
   return getCurrentUser();
+}
+
+// Solicitar redefinição de senha
+export async function solicitarRedefinicaoSenha(email: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/esqueci-senha`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    let errorMessage = 'Erro ao solicitar redefinição de senha.';
+    try {
+      const contentType = response.headers.get('content-type');
+      const text = await response.text();
+      
+      if (contentType && contentType.includes('application/json') && text.trim()) {
+        try {
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          // Se não conseguir fazer parse do JSON, usa o texto
+          errorMessage = text || errorMessage;
+        }
+      } else if (text) {
+        // Se não for JSON mas tem texto, usa o texto
+        errorMessage = text;
+      } else {
+        errorMessage = `Erro ${response.status}: ${response.statusText}`;
+      }
+    } catch (e) {
+      errorMessage = `Erro ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
+  }
+
+  // Se a resposta foi OK, não precisa fazer parse (pode ser 204 No Content ou texto simples)
+  // Apenas retorna void
+}
+
+// Redefinir senha com token
+export async function redefinirSenha(token: string, novaSenha: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/resetar-senha`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ token, novaSenha }),
+  });
+
+  if (!response.ok) {
+    let errorMessage = 'Erro ao redefinir senha.';
+    try {
+      const contentType = response.headers.get('content-type');
+      const text = await response.text();
+      
+      if (contentType && contentType.includes('application/json') && text.trim()) {
+        try {
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          // Se não conseguir fazer parse do JSON, usa o texto
+          errorMessage = text || errorMessage;
+        }
+      } else if (text) {
+        // Se não for JSON mas tem texto, usa o texto
+        errorMessage = text;
+      } else {
+        errorMessage = `Erro ${response.status}: ${response.statusText}`;
+      }
+    } catch (e) {
+      errorMessage = `Erro ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
+  }
+
+  // Se a resposta foi OK, não precisa fazer parse (pode ser 204 No Content ou texto simples)
+  // Apenas retorna void
 }
 
 export async function verifyEmail(codigo: string): Promise<{ message: string }> {

@@ -95,6 +95,8 @@ function Register() {
   const [cidade, setCidade] = useState('')
   const [rua, setRua] = useState('')
   const [numero, setNumero] = useState('')
+  const [bairro, setBairro] = useState('')
+  const [complemento, setComplemento] = useState('')
   const [isLoadingCep, setIsLoadingCep] = useState(false)
 
   // Função para buscar informações do CEP
@@ -108,12 +110,14 @@ function Register() {
         setEstado(data.uf || '');
         setCidade(data.localidade || '');
         setRua(data.logradouro || '');
+        setBairro(data.bairro || '');
         // Foca no campo de número quando o CEP for preenchido
         document.getElementById('numero')?.focus();
       } else {
         setEstado('');
         setCidade('');
         setRua('');
+        setBairro('');
       }
     } catch (error) {
       console.error('Erro ao buscar CEP:', error);
@@ -121,6 +125,7 @@ function Register() {
       setEstado('');
       setCidade('');
       setRua('');
+      setBairro('');
     } finally {
       setIsLoadingCep(false);
     }
@@ -143,9 +148,9 @@ function Register() {
           ? 'CNPJ inválido.'
           : undefined)),
     nickname: !nickname && touched.nickname ? 'Campo obrigatório.' : undefined,
-    birth: accountType === 'pf' && touched.birth
+    birth: touched.birth
       ? (!birth
-        ? 'Campo obrigatório.'
+        ? undefined  // Não obrigatório para PJ
         : (!isValidDateDDMMYYYY(birth) ? 'Informe uma data válida (dd/mm/aaaa).' : undefined))
       : undefined,
     email: touched.email
@@ -185,7 +190,8 @@ function Register() {
       numero: true
     }
     
-    if (accountType === 'pf') {
+    // Data de nascimento pode ser tocada para ambos os tipos (opcional para PJ)
+    if (birth) {
       fieldsToTouch.birth = true
     }
     
@@ -223,7 +229,7 @@ function Register() {
         numero: numero || '0', // Backend espera String
       };
 
-      // Data de nascimento: obrigatória para PF, formato dd/MM/yyyy (como o backend espera)
+      // Data de nascimento: obrigatória para PF, opcional para PJ, formato dd/MM/yyyy
       if (accountType === 'pf') {
         if (!birth) {
           throw new Error('Data de nascimento é obrigatória para pessoa física');
@@ -237,6 +243,14 @@ function Register() {
         
         // Backend espera formato dd/MM/yyyy (mantém como está, sem conversão)
         userData.dataNascimento = birth;
+      } else if (accountType === 'pj' && birth) {
+        // Para PJ, data de nascimento é opcional, mas se informada, valida
+        const [day, month, year] = birth.split('/');
+        if (day && month && year && year.length === 4) {
+          userData.dataNascimento = birth;
+        } else if (birth.trim()) {
+          throw new Error('Data de nascimento inválida. Use o formato DD/MM/AAAA');
+        }
       }
 
       // Campos opcionais de endereço
@@ -245,6 +259,12 @@ function Register() {
       }
       if (estado && estado.trim()) {
         userData.uf = estado.trim(); // Backend espera 'uf', não 'estado'
+      }
+      if (bairro && bairro.trim()) {
+        userData.bairro = bairro.trim();
+      }
+      if (complemento && complemento.trim()) {
+        userData.complemento = complemento.trim();
       }
 
       // Campo isMei para pessoa jurídica
@@ -375,47 +395,43 @@ function Register() {
                   />
                 </div>
                 
-                {accountType === 'pf' && (
-                  <>
-                    <div>
-                      <Input
-                        label={<span className="font-medium">Data de nascimento</span>}
-                        name="birth"
-                        placeholder="dd/mm/aaaa"
-                        value={birth}
-                        onChange={(e) => setBirth(maskDate(e.target.value))}
-                        onBlur={() => setTouched((t) => ({ ...t, birth: true }))}
-                        error={errors.birth}
-                      />
-                    </div>
-                    <div>
-                      <Input
-                        label={<span className="font-medium">Telefone</span>}
-                        name="telefone"
-                        placeholder="(00) 00000-0000"
-                        value={telefone}
-                        onChange={(e) => {
-                          let value = e.target.value.replace(/\D/g, '')
-                          let formattedValue = value
-                          
-                          if (value.length > 11) value = value.slice(0, 11)
-                          if (value.length > 10) {
-                            formattedValue = value.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3')
-                          } else if (value.length > 5) {
-                            formattedValue = value.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3')
-                          } else if (value.length > 2) {
-                            formattedValue = value.replace(/^(\d{2})(\d{0,5})/, '($1) $2')
-                          } else if (value.length > 0) {
-                            formattedValue = value.replace(/^(\d*)/, '($1')
-                          }
-                          
-                          setTelefone(formattedValue)
-                        }}
-                        onBlur={() => setTouched((t) => ({ ...t, telefone: true }))}
-                      />
-                    </div>
-                  </>
-                )}
+                <div>
+                  <Input
+                    label={<span className="font-medium">Data de nascimento{accountType === 'pf' && <span className="text-red-500">*</span>}</span>}
+                    name="birth"
+                    placeholder="dd/mm/aaaa"
+                    value={birth}
+                    onChange={(e) => setBirth(maskDate(e.target.value))}
+                    onBlur={() => setTouched((t) => ({ ...t, birth: true }))}
+                    error={errors.birth}
+                  />
+                </div>
+                <div>
+                  <Input
+                    label={<span className="font-medium">Telefone</span>}
+                    name="telefone"
+                    placeholder="(00) 00000-0000"
+                    value={telefone}
+                    onChange={(e) => {
+                      let value = e.target.value.replace(/\D/g, '')
+                      let formattedValue = value
+                      
+                      if (value.length > 11) value = value.slice(0, 11)
+                      if (value.length > 10) {
+                        formattedValue = value.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3')
+                      } else if (value.length > 5) {
+                        formattedValue = value.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3')
+                      } else if (value.length > 2) {
+                        formattedValue = value.replace(/^(\d{2})(\d{0,5})/, '($1) $2')
+                      } else if (value.length > 0) {
+                        formattedValue = value.replace(/^(\d*)/, '($1')
+                      }
+                      
+                      setTelefone(formattedValue)
+                    }}
+                    onBlur={() => setTouched((t) => ({ ...t, telefone: true }))}
+                  />
+                </div>
               </div>
               
               {accountType === 'pj' && (
@@ -510,6 +526,26 @@ function Register() {
                           onChange={(e) => setRua(e.target.value)}
                           onBlur={() => setTouched((t) => ({ ...t, rua: true }))}
                           error={errors.rua}
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          label={<span className="font-medium">Bairro</span>}
+                          name="bairro"
+                          placeholder="Seu bairro"
+                          value={bairro}
+                          onChange={(e) => setBairro(e.target.value)}
+                          onBlur={() => setTouched((t) => ({ ...t, bairro: true }))}
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          label={<span className="font-medium">Complemento</span>}
+                          name="complemento"
+                          placeholder="Apto, Bloco, etc."
+                          value={complemento}
+                          onChange={(e) => setComplemento(e.target.value)}
+                          onBlur={() => setTouched((t) => ({ ...t, complemento: true }))}
                         />
                       </div>
                     </div>

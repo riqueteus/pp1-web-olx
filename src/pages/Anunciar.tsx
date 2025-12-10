@@ -38,7 +38,6 @@ export default function Anunciar() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  // Mapeamento de categorias do frontend para o backend
   const categoriaMap: Record<string, CategoriaProduto> = {
     'Celulares': 'CELULAR_TELEFONIA',
     'Eletrodomésticos': 'ELETRODOMESTICOS',
@@ -53,7 +52,6 @@ export default function Anunciar() {
     { value: 'Moda', label: 'Moda' },
   ];
 
-  // Características por categoria
   const caracteristicasPorCategoria: Record<string, { label1: string; label2: string; label3: string }> = {
     'Celulares': {
       label1: 'Marca',
@@ -77,7 +75,6 @@ export default function Anunciar() {
     }
   };
 
-  // Mapeamento reverso de categorias (backend -> frontend)
   const categoriaReverseMap: Record<CategoriaProduto, string> = {
     'CELULAR_TELEFONIA': 'Celulares',
     'ELETRODOMESTICOS': 'Eletrodomésticos',
@@ -85,7 +82,6 @@ export default function Anunciar() {
     'MODA': 'Moda',
   };
 
-  // Carregar dados do produto quando estiver em modo edição
   useEffect(() => {
     const loadProductData = async () => {
       if (!isEditMode || !editId) return;
@@ -96,7 +92,6 @@ export default function Anunciar() {
 
         const categoriaFrontend = categoriaReverseMap[produto.categoriaProduto] || '';
         
-        // Preencher formulário com dados do produto
         const newFormData: FormData = {
           title: produto.nome || '',
           description: produto.descricao || '',
@@ -108,7 +103,6 @@ export default function Anunciar() {
           caracteristica3: '',
         };
 
-        // Preencher características se existirem
         if (produto.caracteristicas && categoriaFrontend) {
           const categoriaLabels = caracteristicasPorCategoria[categoriaFrontend];
           if (categoriaLabels) {
@@ -121,7 +115,6 @@ export default function Anunciar() {
 
         setFormData(newFormData);
 
-        // Carregar preview da imagem existente (se houver)
         if (produto.imagem) {
           const imageUrl = `http://localhost:8080/api/produtos/imagens/${encodeURIComponent(produto.imagem)}`;
           setPreviewUrl(imageUrl);
@@ -149,17 +142,15 @@ export default function Anunciar() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
-      // Revogar URL anterior se existir
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
       }
       
-      // Criar preview URL
       const newPreviewUrl = URL.createObjectURL(file);
       
       setImage(file);
       setPreviewUrl(newPreviewUrl);
-      setError(''); // Limpar erro se houver
+      setError('');
     }
   };
 
@@ -169,7 +160,6 @@ export default function Anunciar() {
     }
     setImage(null);
     setPreviewUrl(null);
-    // Limpar o input de arquivo
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -179,7 +169,6 @@ export default function Anunciar() {
     e.preventDefault();
     setError('');
     
-    // Validação básica
     if (!formData.title.trim() || !formData.description.trim() || !formData.price) {
       setError('Preencha todos os campos obrigatórios');
       return;
@@ -190,7 +179,6 @@ export default function Anunciar() {
       return;
     }
     
-    // Em modo de criação, exigir uma imagem
     if (!isEditMode && !image) {
       setError('Adicione uma imagem do produto');
       return;
@@ -199,23 +187,19 @@ export default function Anunciar() {
     setIsSubmitting(true);
     
     try {
-      // Converter preço para número (aceita vírgula ou ponto como separador decimal)
       const precoStr = formData.price.replace(/[^\d,.]/g, '').replace(',', '.');
       const preco = parseFloat(precoStr);
       if (isNaN(preco) || preco <= 0) {
         throw new Error('Preço inválido. Informe um valor maior que zero.');
       }
 
-      // Mapear condição do frontend para o backend
       const condicao: CondicaoProduto = formData.condition === 'new' ? 'NOVO' : 'USADO';
 
-      // Mapear categoria do frontend para o backend
       const categoriaProduto = categoriaMap[formData.category];
       if (!categoriaProduto) {
         throw new Error('Categoria inválida');
       }
 
-      // Construir objeto de características
       const caracteristicas: Record<string, string> = {};
       const categoriaLabels = caracteristicasPorCategoria[formData.category];
       
@@ -232,7 +216,6 @@ export default function Anunciar() {
       }
 
       if (isEditMode && editId) {
-        // Modo de edição - atualizar produto existente
         await updateProduto(Number(editId), {
           nome: formData.title.trim(),
           descricao: formData.description.trim(),
@@ -242,12 +225,10 @@ export default function Anunciar() {
           caracteristicas: Object.keys(caracteristicas).length > 0 ? caracteristicas : undefined,
         });
 
-        // Upload de nova imagem se houver
         if (image) {
           await uploadProdutoImagem(Number(editId), image);
         }
       } else {
-        // Modo de criação - criar novo produto
         const userData = await getCurrentUser();
         if (!userData || !userData.id) {
           throw new Error('Usuário não autenticado');
@@ -262,13 +243,11 @@ export default function Anunciar() {
           caracteristicas: Object.keys(caracteristicas).length > 0 ? caracteristicas : undefined,
         });
 
-        // Upload da imagem
         if (image) {
           await uploadProdutoImagem(produto.id!, image);
         }
       }
 
-      // Sucesso - redirecionar para meus anúncios
       navigate('/meus-anuncios');
       
     } catch (error) {
@@ -310,7 +289,6 @@ export default function Anunciar() {
             ) : (
               <form onSubmit={handleSubmit}>
               <div className="space-y-6">
-                {/* Title */}
                 <div>
                   <label htmlFor="title" className="block text-sm font-medium text-gray-700">
                     Título do anúncio <span className="text-red-500">*</span>
@@ -327,7 +305,6 @@ export default function Anunciar() {
                   />
                 </div>
 
-                {/* Category */}
                 <div>
                   <label htmlFor="category" className="block text-sm font-medium text-gray-700">
                     Categoria <span className="text-red-500">*</span>
@@ -349,7 +326,6 @@ export default function Anunciar() {
                   </select>
                 </div>
 
-                {/* Condition */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Estado do produto <span className="text-red-500">*</span>
@@ -380,7 +356,6 @@ export default function Anunciar() {
                   </div>
                 </div>
 
-                {/* Price */}
                 <div className="w-1/3">
                   <label htmlFor="price" className="block text-sm font-medium text-gray-700">
                     Preço <span className="text-red-500">*</span>
@@ -402,7 +377,6 @@ export default function Anunciar() {
                   </div>
                 </div>
 
-                {/* Description */}
                 <div>
                   <label htmlFor="description" className="block text-sm font-medium text-gray-700">
                     Descrição <span className="text-red-500">*</span>
@@ -424,7 +398,6 @@ export default function Anunciar() {
                   </p>
                 </div>
 
-                {/* Características - Exibidas dinamicamente baseado na categoria */}
                 {formData.category && caracteristicasPorCategoria[formData.category] && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium text-gray-900">Características do Produto</h3>
@@ -475,7 +448,6 @@ export default function Anunciar() {
                   </div>
                 )}
 
-                {/* Image */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Foto {!isEditMode && <span className="text-red-500">*</span>}
@@ -486,7 +458,6 @@ export default function Anunciar() {
                       : 'Adicione uma foto do produto.'}
                   </p>
                   
-                  {/* Image preview */}
                   {previewUrl && (
                     <div className="mt-2 mb-4 relative inline-block">
                       <img
@@ -507,7 +478,6 @@ export default function Anunciar() {
                     </div>
                   )}
                   
-                  {/* File input */}
                   <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                     <div className="space-y-1 text-center">
                       <svg

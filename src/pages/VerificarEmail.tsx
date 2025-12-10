@@ -13,7 +13,6 @@ function VerificarEmail() {
   const verificadoRef = useRef(false);
 
   useEffect(() => {
-    // Evita executar múltiplas vezes
     if (verificadoRef.current) return;
     verificadoRef.current = true;
 

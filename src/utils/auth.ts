@@ -1,4 +1,3 @@
-// Helper function to get authentication data from localStorage
 export const getAuthData = () => {
   try {
     const token = localStorage.getItem('authToken');
@@ -15,7 +14,6 @@ export const getAuthData = () => {
   }
 };
 
-// Helper function to save authentication data
 export const saveAuthData = (token: string, userData: any) => {
   try {
     localStorage.setItem('authToken', token);
@@ -31,7 +29,6 @@ export const saveAuthData = (token: string, userData: any) => {
   }
 };
 
-// Helper function to clear authentication data
 export const clearAuthData = () => {
   try {
     localStorage.removeItem('authToken');
@@ -44,7 +41,6 @@ export const clearAuthData = () => {
   }
 };
 
-// Check if user is authenticated
 export const isAuthenticated = () => {
   const token = localStorage.getItem('authToken');
   if (!token) {

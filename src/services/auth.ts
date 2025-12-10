@@ -6,12 +6,12 @@ export type RegisterVendorPayload = {
   senha: string
   cpfCnpj: string  
   telefone: string
-  dataNascimento?: string  // Opcional: obrigatório apenas para PF, formato dd/MM/yyyy
+  dataNascimento?: string
   cep: string
   logradouro: string
-  numero: string  // Backend espera String
+  numero: string
   cidade?: string
-  uf?: string  // Backend espera 'uf', não 'estado'
+  uf?: string
   bairro?: string
   complemento?: string
   isMei?: boolean
@@ -29,7 +29,6 @@ export type AuthResponse = {
 
 async function request<T>(url: string, options: RequestInit): Promise<T> {
   try {
-    // Se headers já foram passados, usa eles, senão cria headers básicos
     const defaultHeaders: HeadersInit = {
       'Content-Type': 'application/json',
     };
@@ -45,18 +44,15 @@ async function request<T>(url: string, options: RequestInit): Promise<T> {
     if (!response.ok) {
       let errorMessage = 'Ocorreu um erro inesperado. Tente novamente.';
       
-      // Tenta obter a mensagem de erro do corpo da resposta
       try {
         const errorData = await response.json();
         
-        // Se a resposta contiver uma mensagem de erro, use-a
         if (errorData.message) {
           errorMessage = errorData.message;
         } else if (errorData.error) {
           errorMessage = errorData.error;
         }
       } catch (e) {
-        // Se não conseguir fazer parse do JSON, usa o status code para determinar a mensagem
         switch (response.status) {
           case 400:
             errorMessage = 'Requisição inválida. Verifique os dados informados.';
@@ -76,7 +72,6 @@ async function request<T>(url: string, options: RequestInit): Promise<T> {
         }
       }
       
-      // Cria um objeto de erro personalizado com a mensagem e o status
       const error = new Error(errorMessage) as Error & { status?: number };
       error.status = response.status;
       throw error;
@@ -84,11 +79,9 @@ async function request<T>(url: string, options: RequestInit): Promise<T> {
 
     return response.json();
   } catch (error) {
-    // Se já for um erro que lançamos, apenas propaga
     if (error instanceof Error) {
       throw error;
     }
-    // Se for outro tipo de erro (ex: rede), lança com mensagem genérica
     throw new Error('Erro de conexão. Verifique sua internet e tente novamente.');
   }
 }
@@ -107,8 +100,6 @@ export async function login(data: LoginPayload): Promise<AuthResponse> {
   })
 }
 
-// Tipo para dados do usuário retornados pela API
-// O backend retorna endereço como campos no nível raiz (como no cadastro)
 export type UserData = {
   id?: number
   nome: string
@@ -117,16 +108,14 @@ export type UserData = {
   cpfCnpj?: string
   dataNascimento?: string
   isMei?: boolean
-  // Campos de endereço no nível raiz (como o backend espera/recebe)
   cep?: string
   logradouro?: string
-  numero?: string  // Backend espera String
+  numero?: string
   cidade?: string
-  uf?: string  // Backend espera 'uf', não 'estado'
-  estado?: string  // Mantido para compatibilidade
+  uf?: string
+  estado?: string
   bairro?: string
   complemento?: string
-  // Mantém compatibilidade com objeto aninhado (caso backend retorne assim)
   endereco?: {
     cep?: string
     logradouro?: string
@@ -138,11 +127,10 @@ export type UserData = {
   }
 }
 
-// Tipo para atualização de usuário
 export type UpdateUserPayload = {
   nome?: string
   telefone?: string
-  dataNascimento?: string  // Formato dd/MM/yyyy (como o backend espera)
+  dataNascimento?: string
   cep?: string
   logradouro?: string
   numero?: string
@@ -152,7 +140,6 @@ export type UpdateUserPayload = {
   complemento?: string
 }
 
-// Função auxiliar para adicionar token de autenticação
 function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem('authToken');
   return {
@@ -161,14 +148,12 @@ function getAuthHeaders(): HeadersInit {
   };
 }
 
-// Buscar dados do usuário logado
 export async function getCurrentUser(): Promise<UserData> {
   const data = await request<any>('/api/usuarios/me', {
     method: 'GET',
     headers: getAuthHeaders(),
   });
   
-  // Extrai endereço se vier como objeto aninhado
   const endereco = data.endereco || {};
   
   return {
@@ -179,19 +164,17 @@ export async function getCurrentUser(): Promise<UserData> {
     cpfCnpj: data.cpfCnpj || data.cpf_cnpj,
     dataNascimento: data.dataNascimento || data.data_nascimento,
     isMei: data.isMei !== undefined ? data.isMei : (data.is_mei !== undefined ? data.is_mei : undefined),
-    // Campos de endereço: pega do objeto endereco se existir, senão do nível raiz
     cep: endereco.cep || data.cep,
     logradouro: endereco.logradouro || data.logradouro,
     numero: (endereco.numero !== undefined && endereco.numero !== null) ? String(endereco.numero) : ((data.numero !== undefined && data.numero !== null) ? String(data.numero) : undefined),
     cidade: endereco.cidade || data.cidade,
-    uf: endereco.estado || data.uf || data.estado,  // Prioriza 'uf', depois 'estado'
-    estado: endereco.estado || data.uf || data.estado,  // Mantido para compatibilidade
+    uf: endereco.estado || data.uf || data.estado,
+    estado: endereco.estado || data.uf || data.estado,
     bairro: endereco.bairro || data.bairro,
     complemento: endereco.complemento || data.complemento,
   };
 }
 
-// Atualizar dados do usuário logado
 export async function updateCurrentUser(data: UpdateUserPayload): Promise<UserData> {
   const payload: any = {
     nome: data.nome,
@@ -206,7 +189,6 @@ export async function updateCurrentUser(data: UpdateUserPayload): Promise<UserDa
     complemento: data.complemento,
   };
   
-  // Remove campos undefined/null ou vazios
   Object.keys(payload).forEach(key => {
     if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
       delete payload[key];
@@ -222,7 +204,6 @@ export async function updateCurrentUser(data: UpdateUserPayload): Promise<UserDa
   return getCurrentUser();
 }
 
-// Solicitar redefinição de senha
 export async function solicitarRedefinicaoSenha(email: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/auth/esqueci-senha`, {
     method: 'POST',
@@ -243,11 +224,9 @@ export async function solicitarRedefinicaoSenha(email: string): Promise<void> {
           const errorData = JSON.parse(text);
           errorMessage = errorData.message || errorData.error || errorMessage;
         } catch (e) {
-          // Se não conseguir fazer parse do JSON, usa o texto
           errorMessage = text || errorMessage;
         }
       } else if (text) {
-        // Se não for JSON mas tem texto, usa o texto
         errorMessage = text;
       } else {
         errorMessage = `Erro ${response.status}: ${response.statusText}`;
@@ -257,12 +236,8 @@ export async function solicitarRedefinicaoSenha(email: string): Promise<void> {
     }
     throw new Error(errorMessage);
   }
-
-  // Se a resposta foi OK, não precisa fazer parse (pode ser 204 No Content ou texto simples)
-  // Apenas retorna void
 }
 
-// Redefinir senha com token
 export async function redefinirSenha(token: string, novaSenha: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/auth/resetar-senha`, {
     method: 'POST',
@@ -283,11 +258,9 @@ export async function redefinirSenha(token: string, novaSenha: string): Promise<
           const errorData = JSON.parse(text);
           errorMessage = errorData.message || errorData.error || errorMessage;
         } catch (e) {
-          // Se não conseguir fazer parse do JSON, usa o texto
           errorMessage = text || errorMessage;
         }
       } else if (text) {
-        // Se não for JSON mas tem texto, usa o texto
         errorMessage = text;
       } else {
         errorMessage = `Erro ${response.status}: ${response.statusText}`;
@@ -297,9 +270,6 @@ export async function redefinirSenha(token: string, novaSenha: string): Promise<
     }
     throw new Error(errorMessage);
   }
-
-  // Se a resposta foi OK, não precisa fazer parse (pode ser 204 No Content ou texto simples)
-  // Apenas retorna void
 }
 
 export async function verifyEmail(codigo: string): Promise<{ message: string }> {
@@ -311,27 +281,21 @@ export async function verifyEmail(codigo: string): Promise<{ message: string }> 
       },
     })
 
-    // Se a resposta for bem-sucedida (200-299)
     if (response.ok) {
-      // Verifica se tem conteúdo e se é JSON
       const contentType = response.headers.get('content-type');
       
-      // Se não tem conteúdo (204 No Content) ou se a conta foi ativada, considera sucesso
       if (response.status === 204 || !contentType || !contentType.includes('application/json')) {
         return { message: 'Sua conta foi ativada com sucesso!' };
       }
       
-      // Tenta fazer parse do JSON
       try {
         const data = await response.json();
         return data.message ? data : { message: 'Sua conta foi ativada com sucesso!' };
       } catch (e) {
-        // Se não conseguir fazer parse, mas status é OK, considera sucesso
         return { message: 'Sua conta foi ativada com sucesso!' };
       }
     }
 
-    // Se não for OK, tenta obter mensagem de erro
     let errorMessage = 'Erro ao verificar email. O código pode estar inválido ou expirado.';
     
     try {
@@ -342,7 +306,6 @@ export async function verifyEmail(codigo: string): Promise<{ message: string }> 
         errorMessage = errorData.error;
       }
     } catch (e) {
-      // Se não conseguir fazer parse, usa mensagem padrão baseada no status
       if (response.status === 404) {
         errorMessage = 'Código de verificação não encontrado.';
       } else if (response.status === 400) {
@@ -352,11 +315,9 @@ export async function verifyEmail(codigo: string): Promise<{ message: string }> 
     
     throw new Error(errorMessage);
   } catch (error) {
-    // Se já for um erro que lançamos, apenas propaga
     if (error instanceof Error) {
       throw error;
     }
-    // Se for outro tipo de erro (ex: rede), lança com mensagem genérica
     throw new Error('Erro de conexão. Verifique sua internet e tente novamente.');
   }
 }

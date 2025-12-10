@@ -52,16 +52,12 @@ function maskCNPJ(value: string) {
 function isValidCPF(cpf: string) {
   const cleaned = cpf.replace(/\D/g, '')
   if (cleaned.length !== 11) return false
-  
-  // CPF validation logic here (you can implement the complete validation)
   return true
 }
 
 function isValidCNPJ(cnpj: string) {
   const cleaned = cnpj.replace(/\D/g, '')
   if (cleaned.length !== 14) return false
-  
-  // CNPJ validation logic here (you can implement the complete validation)
   return true
 }
 
@@ -99,7 +95,6 @@ function Register() {
   const [complemento, setComplemento] = useState('')
   const [isLoadingCep, setIsLoadingCep] = useState(false)
 
-  // Função para buscar informações do CEP
   const buscarCep = async (cep: string) => {
     try {
       setIsLoadingCep(true);
@@ -111,7 +106,6 @@ function Register() {
         setCidade(data.localidade || '');
         setRua(data.logradouro || '');
         setBairro(data.bairro || '');
-        // Foca no campo de número quando o CEP for preenchido
         document.getElementById('numero')?.focus();
       } else {
         setEstado('');
@@ -121,7 +115,6 @@ function Register() {
       }
     } catch (error) {
       console.error('Erro ao buscar CEP:', error);
-      // Limpa os campos em caso de erro
       setEstado('');
       setCidade('');
       setRua('');
@@ -190,14 +183,12 @@ function Register() {
       numero: true
     }
     
-    // Data de nascimento pode ser tocada para ambos os tipos (opcional para PJ)
     if (birth) {
       fieldsToTouch.birth = true
     }
     
     setTouched((prev) => ({ ...prev, ...fieldsToTouch }))
     
-    // Check if there are any errors
     const hasErrors = Object.values(errors).some(error => error !== undefined)
     
     if (hasErrors) return
@@ -207,13 +198,11 @@ function Register() {
     setIsSubmitting(true)
 
     try {
-      // Formatar CEP (apenas números)
       const formattedCep = cep.replace(/\D/g, '');
       if (formattedCep.length !== 8) {
         throw new Error('CEP deve ter 8 dígitos');
       }
       
-      // Validar se logradouro (rua) está preenchido
       if (!rua || rua.trim() === '') {
         throw new Error('Logradouro (rua) é obrigatório');
       }
@@ -226,25 +215,21 @@ function Register() {
         telefone: telefone.replace(/\D/g, ''),
         cep: formattedCep,
         logradouro: rua.trim(),
-        numero: numero || '0', // Backend espera String
+        numero: numero || '0',
       };
 
-      // Data de nascimento: obrigatória para PF, opcional para PJ, formato dd/MM/yyyy
       if (accountType === 'pf') {
         if (!birth) {
           throw new Error('Data de nascimento é obrigatória para pessoa física');
         }
         
-        // Validar formato DD/MM/YYYY
         const [day, month, year] = birth.split('/');
         if (!day || !month || !year || year.length !== 4) {
           throw new Error('Data de nascimento inválida. Use o formato DD/MM/AAAA');
         }
         
-        // Backend espera formato dd/MM/yyyy (mantém como está, sem conversão)
         userData.dataNascimento = birth;
       } else if (accountType === 'pj' && birth) {
-        // Para PJ, data de nascimento é opcional, mas se informada, valida
         const [day, month, year] = birth.split('/');
         if (day && month && year && year.length === 4) {
           userData.dataNascimento = birth;
@@ -253,12 +238,11 @@ function Register() {
         }
       }
 
-      // Campos opcionais de endereço
       if (cidade && cidade.trim()) {
         userData.cidade = cidade.trim();
       }
       if (estado && estado.trim()) {
-        userData.uf = estado.trim(); // Backend espera 'uf', não 'estado'
+        userData.uf = estado.trim();
       }
       if (bairro && bairro.trim()) {
         userData.bairro = bairro.trim();
@@ -267,12 +251,9 @@ function Register() {
         userData.complemento = complemento.trim();
       }
 
-      // Campo isMei para pessoa jurídica
       if (accountType === 'pj' && isMei) {
         userData.isMei = true;
       }
-      
-      console.log('Enviando dados:', userData);
       
       await registerVendor(userData)
 
@@ -460,11 +441,9 @@ function Register() {
                             placeholder="00000000"
                             value={cep}
                             onChange={(e) => {
-                              // Aceita apenas números e limita a 8 dígitos
                               const value = e.target.value.replace(/\D/g, '').slice(0, 8);
                               setCep(value);
                               
-                              // Se o CEP tiver 8 dígitos, busca automaticamente
                               if (value.length === 8) {
                                 buscarCep(value);
                               }

@@ -4,12 +4,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { login as loginRequest } from '../services/auth';
 import { saveAuthData } from '../utils/auth';
 
-// Add global styles for link hover effect
 const linkStyle = 'text-purple-600 hover:text-purple-700 font-semibold hover:underline'
 
 function isValidEmail(value: string) {
   if (!value) return false
-  // Simple email check
   return /.+@.+\..+/.test(value)
 }
 
@@ -42,7 +40,6 @@ function Login() {
     setTouched(true)
     setServerError(null)
 
-    // Validação básica do formulário
     if (!email.trim()) {
       setServerError('Por favor, informe seu e-mail.')
       return
@@ -62,11 +59,9 @@ function Login() {
     
     try {
       const { token, ...userData } = await loginRequest({ email, senha: password });
-      // Save auth data including user info
       saveAuthData(token, {
         name: userData.nomeUsuario,
         email: email,
-        // Add any other user data you want to store
       });
       navigate('/');
     } catch (err) {

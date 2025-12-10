@@ -9,9 +9,6 @@ import Perfil from './pages/Perfil';
 import Anunciar from './pages/Anunciar';
 import { isAuthenticated } from './utils/auth';
 
-// Clear auth data function moved to auth.ts
-
-// Protected Route component
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
@@ -27,13 +24,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
         <Route path="/login" element={<MainLayout><Login /></MainLayout>} />
         <Route path="/cadastro" element={<Register />} />
         <Route path="/recuperacao-senha" element={<MainLayout><RecuperacaoSenha /></MainLayout>} />
         <Route path="/verificar-email" element={<VerificarEmail />} />
         
-        {/* Protected routes */}
         <Route 
           path="/" 
           element={
@@ -67,7 +62,6 @@ function App() {
           } 
         />
         
-        {/* Redirect to home for any other route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

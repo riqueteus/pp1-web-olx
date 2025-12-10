@@ -5,7 +5,6 @@ import { listProdutosUsuario, deleteProduto, markAsSold, type Produto, type Stat
 
 type TabType = 'published' | 'sold' | 'deleted';
 
-// Componente de Exibição de Imagem
 function ProductImage({ images, productName }: { images: string[]; productName: string }) {
   const imageUrl = images && images.length > 0 ? images[0] : null;
 
@@ -26,21 +25,16 @@ function ProductImage({ images, productName }: { images: string[]; productName: 
         onError={(e) => {
           const img = e.currentTarget as HTMLImageElement;
           const src = img.src;
-          console.error(`❌ Erro ao carregar imagem do produto: ${src}`);
           
-          // Tentar diferentes formatos de URL
           try {
             const url = new URL(src);
             const pathParts = url.pathname.split('/');
             const fileName = pathParts[pathParts.length - 1];
             
-            // Se não tem encode, tenta com encode
             if (!src.includes('%')) {
               const encodedFileName = encodeURIComponent(fileName);
               const newUrl = `${url.origin}${url.pathname.substring(0, url.pathname.lastIndexOf('/'))}/${encodedFileName}`;
-              console.log(`🔄 Tentando novamente com encode: ${newUrl}`);
               
-              // Prevenir loop infinito - só tenta uma vez
               if (!img.dataset.retried) {
                 img.dataset.retried = 'true';
                 img.src = newUrl;
@@ -51,8 +45,6 @@ function ProductImage({ images, productName }: { images: string[]; productName: 
             console.error('Erro ao processar URL:', err);
           }
           
-          // Se já tentou ou não conseguiu, mostra placeholder
-          console.error(`❌ Não foi possível carregar a imagem após tentativas`);
           img.style.display = 'none';
           const placeholder = img.nextElementSibling as HTMLElement;
           if (placeholder) {
@@ -78,24 +70,17 @@ export default function MeusAnuncios() {
   const [showSoldModal, setShowSoldModal] = useState(false);
   const [selectedProdutoId, setSelectedProdutoId] = useState<number | null>(null);
 
-  // Função para construir URL da imagem
-  // Tenta diferentes formatos para compatibilidade com o backend
   const getImageUrl = (imagem?: string): string | null => {
     if (!imagem) return null;
     
-    // Se já é uma URL completa, retorna como está
     if (imagem.startsWith('http://') || imagem.startsWith('https://')) {
       return imagem;
     }
     
-    // Se é um caminho relativo começando com /, usa diretamente
     if (imagem.startsWith('/')) {
       return `http://localhost:8080${imagem}`;
     }
     
-    // Se o backend retorna apenas o nome do arquivo (sem /), usa o endpoint de imagens
-    // O Spring Boot PathVariable pode tratar espaços automaticamente, mas vamos tentar sem encode primeiro
-    // O onError vai tentar com encode se necessário
     return `http://localhost:8080/api/produtos/imagens/${imagem}`;
   };
 
@@ -105,7 +90,6 @@ export default function MeusAnuncios() {
         setLoading(true);
         setError('');
         
-        // Buscar dados do usuário logado
         const user = await getCurrentUser();
         if (!user || !user.id) {
           throw new Error('Usuário não autenticado');
@@ -113,44 +97,7 @@ export default function MeusAnuncios() {
         
         setUserData(user);
         
-        // Buscar produtos do usuário
         const produtosList = await listProdutosUsuario(user.id);
-        console.log('=== DEBUG: Produtos retornados do backend ===');
-        console.log('Total de produtos:', produtosList.length);
-        console.log('Produtos completos:', JSON.stringify(produtosList, null, 2));
-        
-        // Log detalhado para cada produto
-        produtosList.forEach((produto, index) => {
-          console.log(`\n--- Produto ${index + 1} ---`);
-          console.log(`ID: ${produto.id}`);
-          console.log(`Nome: ${produto.nome}`);
-          console.log(`Campo imagem (raw):`, produto.imagem);
-          console.log(`Tipo do campo imagem:`, typeof produto.imagem);
-          
-          if (produto.imagem) {
-            const imageUrl = getImageUrl(produto.imagem);
-            console.log(`URL construída: "${imageUrl}"`);
-            
-            // Testar se a URL está acessível
-            if (imageUrl) {
-              fetch(imageUrl, { method: 'HEAD' })
-                .then(response => {
-                  console.log(`Status da imagem: ${response.status} ${response.statusText}`);
-                  if (!response.ok) {
-                    console.error(`❌ ERRO: Imagem não encontrada em: ${imageUrl}`);
-                  } else {
-                    console.log(`✅ Imagem encontrada: ${imageUrl}`);
-                  }
-                })
-                .catch(err => {
-                  console.error(`❌ ERRO ao verificar imagem:`, err);
-                });
-            }
-          } else {
-            console.warn('⚠️ Campo imagem está vazio/null/undefined');
-          }
-        });
-        
         setProdutos(produtosList);
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
@@ -167,14 +114,12 @@ export default function MeusAnuncios() {
     fetchData();
   }, []);
 
-  // Filtrar produtos por status baseado na aba ativa
   const getFilteredProdutos = () => {
     if (activeTab === 'published') {
       return produtos.filter(p => p.status === 'ATIVO');
     } else if (activeTab === 'sold') {
       return produtos.filter(p => p.status === 'VENDIDO');
     } else {
-      // deleted - produtos inativos
       return produtos.filter(p => p.status === 'INATIVO');
     }
   };
@@ -189,7 +134,6 @@ export default function MeusAnuncios() {
 
     try {
       await deleteProduto(selectedProdutoId);
-      // Atualizar status para INATIVO (soft delete)
       const updatedProdutos = produtos.map(p => 
         p.id === selectedProdutoId ? { ...p, status: 'INATIVO' as StatusProduto } : p
       );
@@ -214,7 +158,6 @@ export default function MeusAnuncios() {
 
     try {
       await markAsSold(selectedProdutoId);
-      // Atualizar status para VENDIDO
       const updatedProdutos = produtos.map(p => 
         p.id === selectedProdutoId ? { ...p, status: 'VENDIDO' as StatusProduto } : p
       );
@@ -230,8 +173,6 @@ export default function MeusAnuncios() {
   };
 
   const handleEdit = (produtoId: number) => {
-    // Redirecionar para página de edição (você pode criar essa página depois)
-    // Por enquanto, vamos apenas navegar para a página de anunciar com o ID
     navigate(`/anunciar?edit=${produtoId}`);
   };
 
@@ -270,25 +211,15 @@ export default function MeusAnuncios() {
     }
   };
 
-  // Função para obter array de imagens (suporta múltiplas imagens no futuro)
   const getProductImages = (produto: Produto): string[] => {
     const images: string[] = [];
     
-    // Se o campo imagem for uma string única
     if (produto.imagem) {
       const imageUrl = getImageUrl(produto.imagem);
       if (imageUrl) {
         images.push(imageUrl);
       }
     }
-    
-    // Se no futuro o backend retornar um array de imagens, adicionar aqui
-    // if (Array.isArray(produto.imagens)) {
-    //   produto.imagens.forEach(img => {
-    //     const url = getImageUrl(img);
-    //     if (url) images.push(url);
-    //   });
-    // }
     
     return images;
   };
@@ -297,10 +228,8 @@ export default function MeusAnuncios() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white shadow rounded-lg overflow-hidden">
-          {/* Tabs */}
           <div className="border-b border-gray-200">
             <nav className="flex -mb-px">
               <button
@@ -336,7 +265,6 @@ export default function MeusAnuncios() {
             </nav>
           </div>
 
-          {/* Tab Content */}
           <div className="px-6 py-4">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold text-gray-900">Meus Anúncios</h1>
@@ -380,14 +308,11 @@ export default function MeusAnuncios() {
                           return (
                             <div key={produto.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300">
                               <div className="flex flex-col md:flex-row">
-                                {/* Imagem do Produto - 40% */}
                                 <div className="w-full md:w-[40%] shrink-0">
                                   <ProductImage images={images} productName={produto.nome} />
                                 </div>
                                 
-                                {/* Conteúdo do Card - 60% */}
                                 <div className="w-full md:w-[60%] p-5 flex flex-col">
-                                  {/* Título e Status */}
                                   <div className="mb-3">
                                     <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">{produto.nome}</h3>
                                     <div className="flex items-center gap-2 flex-wrap mb-3">
@@ -400,12 +325,10 @@ export default function MeusAnuncios() {
                                     </div>
                                   </div>
 
-                                  {/* Preço */}
                                   <div className="mb-3">
                                     <p className="text-3xl font-bold text-orange-600">{formatPrice(produto.preco)}</p>
                                   </div>
 
-                                  {/* Características */}
                                   {Object.keys(caracteristicas).length > 0 && (
                                     <div className="mb-3 pb-3 border-b border-gray-200">
                                       <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Características</p>
@@ -420,21 +343,18 @@ export default function MeusAnuncios() {
                                     </div>
                                   )}
 
-                                  {/* Descrição */}
                                   {produto.descricao && (
                                     <div className="mb-3 flex-1">
                                       <p className="text-sm text-gray-600 line-clamp-4">{produto.descricao}</p>
                                     </div>
                                   )}
 
-                                  {/* Data de Publicação */}
                                   {produto.dataPublicacao && (
                                     <div className="mb-3 text-xs text-gray-500">
                                       Publicado em: {formatDate(produto.dataPublicacao)}
                                     </div>
                                   )}
 
-                                  {/* Ações - Centralizadas */}
                                   <div className="flex gap-2 mt-auto pt-4 justify-center">
                                     <button
                                       onClick={() => handleEdit(produto.id!)}
@@ -480,12 +400,10 @@ export default function MeusAnuncios() {
                           return (
                             <div key={produto.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden opacity-75">
                               <div className="flex flex-col md:flex-row">
-                                {/* Imagem do Produto - 40% */}
                                 <div className="w-full md:w-[40%] shrink-0">
                                   <ProductImage images={images} productName={produto.nome} />
                                 </div>
                                 
-                                {/* Conteúdo do Card - 60% */}
                                 <div className="w-full md:w-[60%] p-5 flex flex-col">
                                   <div className="mb-3">
                                     <div className="flex items-center justify-between mb-2">
@@ -548,12 +466,10 @@ export default function MeusAnuncios() {
                           return (
                             <div key={produto.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden opacity-50">
                               <div className="flex flex-col md:flex-row">
-                                {/* Imagem do Produto - 40% */}
                                 <div className="w-full md:w-[40%] shrink-0">
                                   <ProductImage images={images} productName={produto.nome} />
                                 </div>
                                 
-                                {/* Conteúdo do Card - 60% */}
                                 <div className="w-full md:w-[60%] p-5 flex flex-col">
                                   <div className="mb-3">
                                     <div className="flex items-center justify-between mb-2">
@@ -606,7 +522,6 @@ export default function MeusAnuncios() {
         </div>
       </main>
 
-      {/* Modal de Confirmação - Excluir */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
@@ -634,7 +549,6 @@ export default function MeusAnuncios() {
         </div>
       )}
 
-      {/* Modal de Confirmação - Marcar como Vendido */}
       {showSoldModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">

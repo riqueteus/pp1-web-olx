@@ -1,6 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-// Tipos baseados no modelo do backend
 export type CondicaoProduto = 'NOVO' | 'USADO'
 export type StatusProduto = 'ATIVO' | 'VENDIDO' | 'INATIVO'
 export type CategoriaProduto = 'CELULAR_TELEFONIA' | 'ELETRODOMESTICOS' | 'CASA_DECORACAO_UTENSILIOS' | 'MODA'
@@ -41,7 +40,6 @@ export type UpdateProdutoPayload = {
   status?: StatusProduto
 }
 
-// Função auxiliar para adicionar token de autenticação
 function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem('authToken');
   return {
@@ -50,7 +48,6 @@ function getAuthHeaders(): HeadersInit {
   };
 }
 
-// Função auxiliar para headers de multipart (upload de imagem)
 function getMultipartHeaders(): HeadersInit {
   const token = localStorage.getItem('authToken');
   return {
@@ -58,7 +55,6 @@ function getMultipartHeaders(): HeadersInit {
   };
 }
 
-// Criar produto
 export async function createProduto(usuarioId: number, data: CreateProdutoPayload): Promise<Produto> {
   const response = await fetch(`${API_BASE_URL}/api/produtos/usuario/${usuarioId}`, {
     method: 'POST',
@@ -80,8 +76,6 @@ export async function createProduto(usuarioId: number, data: CreateProdutoPayloa
   return response.json();
 }
 
-// Upload de imagem do produto
-// Retorna { imagem: "nome-arquivo.jpg" }
 export async function uploadProdutoImagem(produtoId: number, imagem: File): Promise<{ imagem: string }> {
   const formData = new FormData();
   formData.append('imagem', imagem);
@@ -106,7 +100,6 @@ export async function uploadProdutoImagem(produtoId: number, imagem: File): Prom
   return response.json();
 }
 
-// Listar produtos do usuário
 export async function listProdutosUsuario(usuarioId: number): Promise<Produto[]> {
   const response = await fetch(`${API_BASE_URL}/api/produtos/usuario/${usuarioId}`, {
     method: 'GET',
@@ -127,7 +120,6 @@ export async function listProdutosUsuario(usuarioId: number): Promise<Produto[]>
   return response.json();
 }
 
-// Buscar produto por ID
 export async function getProdutoById(produtoId: number): Promise<Produto> {
   const response = await fetch(`${API_BASE_URL}/api/produtos/${produtoId}`, {
     method: 'GET',
@@ -148,7 +140,6 @@ export async function getProdutoById(produtoId: number): Promise<Produto> {
   return response.json();
 }
 
-// Atualizar produto
 export async function updateProduto(produtoId: number, data: UpdateProdutoPayload): Promise<Produto> {
   const response = await fetch(`${API_BASE_URL}/api/produtos/${produtoId}`, {
     method: 'PUT',
@@ -167,7 +158,6 @@ export async function updateProduto(produtoId: number, data: UpdateProdutoPayloa
     throw new Error(errorMessage);
   }
 
-  // Verificar se há conteúdo antes de fazer parse JSON
   const contentType = response.headers.get('content-type');
   if (contentType && contentType.includes('application/json')) {
     const text = await response.text();
@@ -176,11 +166,9 @@ export async function updateProduto(produtoId: number, data: UpdateProdutoPayloa
     }
   }
   
-  // Se não houver JSON, buscar o produto atualizado
   return getProdutoById(produtoId);
 }
 
-// Remover produto (soft delete)
 export async function deleteProduto(produtoId: number): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/produtos/${produtoId}`, {
     method: 'DELETE',
@@ -197,11 +185,8 @@ export async function deleteProduto(produtoId: number): Promise<void> {
     }
     throw new Error(errorMessage);
   }
-
-  // DELETE pode retornar 204 No Content, não precisa fazer parse
 }
 
-// Marcar produto como vendido
 export async function markAsSold(produtoId: number): Promise<Produto> {
   const response = await fetch(`${API_BASE_URL}/api/produtos/${produtoId}/vendido`, {
     method: 'PUT',
@@ -219,7 +204,6 @@ export async function markAsSold(produtoId: number): Promise<Produto> {
     throw new Error(errorMessage);
   }
 
-  // Verificar se há conteúdo antes de fazer parse JSON
   const contentType = response.headers.get('content-type');
   if (contentType && contentType.includes('application/json')) {
     const text = await response.text();
@@ -228,7 +212,6 @@ export async function markAsSold(produtoId: number): Promise<Produto> {
     }
   }
   
-  // Se não houver JSON, buscar o produto atualizado
   return getProdutoById(produtoId);
 }
 

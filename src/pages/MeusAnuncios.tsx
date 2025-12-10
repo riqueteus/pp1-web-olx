@@ -142,16 +142,16 @@ export default function MeusAnuncios() {
     if (!selectedProdutoId) return;
 
     try {
-      await deleteProduto(selectedProdutoId);
+      const updatedProduto = await deleteProduto(selectedProdutoId);
       const updatedProdutos = produtos.map(p => 
-        p.id === selectedProdutoId ? { ...p, status: 'INATIVO' as StatusProduto } : p
+        p.id === selectedProdutoId ? updatedProduto : p
       );
       setProdutos(updatedProdutos);
       setShowDeleteModal(false);
       setSelectedProdutoId(null);
     } catch (err) {
-      console.error('Erro ao excluir produto:', err);
-      alert('Erro ao excluir anúncio. Tente novamente.');
+      console.error('Erro ao deixar produto como inativo:', err);
+      alert('Erro ao deixar anúncio como inativo. Tente novamente.');
       setShowDeleteModal(false);
       setSelectedProdutoId(null);
     }
@@ -381,7 +381,7 @@ export default function MeusAnuncios() {
                                       onClick={() => handleDeleteClick(produto.id!)}
                                       className="px-6 py-2 text-sm font-medium text-white bg-red-400 hover:bg-red-800 rounded-md transition-colors cursor-pointer"
                                     >
-                                      Excluir
+                                      Deixar como inativo
                                     </button>
                                   </div>
                                 </div>
@@ -464,7 +464,7 @@ export default function MeusAnuncios() {
                   <>
                     {filteredProdutos.length === 0 ? (
                       <div className="text-center py-12">
-                        <p className="text-gray-500">Nenhum anúncio excluído.</p>
+                        <p className="text-gray-500">Nenhum anúncio inativo.</p>
                       </div>
                     ) : (
                       <div className="space-y-6">
@@ -483,7 +483,7 @@ export default function MeusAnuncios() {
                                   <div className="mb-3">
                                     <div className="flex items-center justify-between mb-2">
                                       <h3 className="text-xl font-bold text-gray-900">{produto.nome}</h3>
-                                      <span className="px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-800 rounded-full">Excluído</span>
+                                      <span className="px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-800 rounded-full">Inativo</span>
                                     </div>
                                     <div className="flex items-center gap-2 flex-wrap mb-3">
                                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
@@ -534,8 +534,8 @@ export default function MeusAnuncios() {
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Excluir anúncio</h3>
-            <p className="text-gray-600 mb-6">Tem certeza que deseja excluir este anúncio? Esta ação não pode ser desfeita.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Deixar anúncio como inativo</h3>
+            <p className="text-gray-600 mb-6">Tem certeza que deseja deixar este anúncio como inativo? Ele será movido para a aba de inativos.</p>
 
             <div className="flex justify-end space-x-3">
               <button
@@ -551,7 +551,7 @@ export default function MeusAnuncios() {
                 onClick={handleDelete}
                 className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
               >
-                Excluir
+                Deixar como inativo
               </button>
             </div>
           </div>

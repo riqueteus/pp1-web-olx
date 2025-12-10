@@ -82,11 +82,6 @@ function RecuperacaoSenha() {
                   error={error || errorMessage}
                   disabled={loading}
                 />
-                {errorMessage && !error && (
-                  <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                    <p className="text-red-800 text-sm">{errorMessage}</p>
-                  </div>
-                )}
                 <Button 
                   type="button" 
                   className="bg-orange-500 hover:bg-orange-600 text-white w-full cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"

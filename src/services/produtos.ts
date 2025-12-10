@@ -176,14 +176,14 @@ export async function updateProduto(produtoId: number, data: UpdateProdutoPayloa
   return getProdutoById(produtoId);
 }
 
-export async function deleteProduto(produtoId: number): Promise<void> {
-  const response = await fetch(`${getApiBaseUrl()}/api/produtos/${produtoId}`, {
-    method: 'DELETE',
+export async function deleteProduto(produtoId: number): Promise<Produto> {
+  const response = await fetch(`${getApiBaseUrl()}/api/produtos/${produtoId}/inativo`, {
+    method: 'PUT',
     headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
-    let errorMessage = 'Erro ao remover produto.';
+    let errorMessage = 'Erro ao deixar produto como inativo.';
     try {
       const errorData = await response.json();
       errorMessage = errorData.message || errorData.error || errorMessage;
@@ -192,6 +192,16 @@ export async function deleteProduto(produtoId: number): Promise<void> {
     }
     throw new Error(errorMessage);
   }
+
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    const text = await response.text();
+    if (text.trim()) {
+      return JSON.parse(text);
+    }
+  }
+  
+  return getProdutoById(produtoId);
 }
 
 export async function markAsSold(produtoId: number): Promise<Produto> {

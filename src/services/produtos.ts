@@ -1,4 +1,4 @@
-// Normaliza a URL removendo barra no final
+// Normaliza a URL removendo barra no final (lazy - só valida quando usar)
 const getApiBaseUrl = () => {
   const url = import.meta.env.VITE_API_URL
   if (!url) {
@@ -6,8 +6,6 @@ const getApiBaseUrl = () => {
   }
   return url.replace(/\/+$/, '') // Remove barras no final
 }
-
-const API_BASE_URL = getApiBaseUrl()
 
 export type CondicaoProduto = 'NOVO' | 'USADO'
 export type StatusProduto = 'ATIVO' | 'VENDIDO' | 'INATIVO'
@@ -65,7 +63,7 @@ function getMultipartHeaders(): HeadersInit {
 }
 
 export async function createProduto(usuarioId: number, data: CreateProdutoPayload): Promise<Produto> {
-  const response = await fetch(`${API_BASE_URL}/api/produtos/usuario/${usuarioId}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/produtos/usuario/${usuarioId}`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
@@ -89,7 +87,7 @@ export async function uploadProdutoImagem(produtoId: number, imagem: File): Prom
   const formData = new FormData();
   formData.append('imagem', imagem);
 
-  const response = await fetch(`${API_BASE_URL}/api/produtos/${produtoId}/imagem`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/produtos/${produtoId}/imagem`, {
     method: 'POST',
     headers: getMultipartHeaders(),
     body: formData,
@@ -110,7 +108,7 @@ export async function uploadProdutoImagem(produtoId: number, imagem: File): Prom
 }
 
 export async function listProdutosUsuario(usuarioId: number): Promise<Produto[]> {
-  const response = await fetch(`${API_BASE_URL}/api/produtos/usuario/${usuarioId}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/produtos/usuario/${usuarioId}`, {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -130,7 +128,7 @@ export async function listProdutosUsuario(usuarioId: number): Promise<Produto[]>
 }
 
 export async function getProdutoById(produtoId: number): Promise<Produto> {
-  const response = await fetch(`${API_BASE_URL}/api/produtos/${produtoId}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/produtos/${produtoId}`, {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -150,7 +148,7 @@ export async function getProdutoById(produtoId: number): Promise<Produto> {
 }
 
 export async function updateProduto(produtoId: number, data: UpdateProdutoPayload): Promise<Produto> {
-  const response = await fetch(`${API_BASE_URL}/api/produtos/${produtoId}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/produtos/${produtoId}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
@@ -179,7 +177,7 @@ export async function updateProduto(produtoId: number, data: UpdateProdutoPayloa
 }
 
 export async function deleteProduto(produtoId: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/produtos/${produtoId}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/produtos/${produtoId}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -197,7 +195,7 @@ export async function deleteProduto(produtoId: number): Promise<void> {
 }
 
 export async function markAsSold(produtoId: number): Promise<Produto> {
-  const response = await fetch(`${API_BASE_URL}/api/produtos/${produtoId}/vendido`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/produtos/${produtoId}/vendido`, {
     method: 'PUT',
     headers: getAuthHeaders(),
   });

@@ -1,4 +1,4 @@
-// Normaliza a URL removendo barra no final
+// Normaliza a URL removendo barra no final (lazy - só valida quando usar)
 const getApiBaseUrl = () => {
   const url = import.meta.env.VITE_API_URL
   if (!url) {
@@ -6,8 +6,6 @@ const getApiBaseUrl = () => {
   }
   return url.replace(/\/+$/, '') // Remove barras no final
 }
-
-const API_BASE_URL = getApiBaseUrl()
 
 export type RegisterVendorPayload = {
   nome: string
@@ -39,8 +37,9 @@ export type AuthResponse = {
 async function request<T>(url: string, options: RequestInit): Promise<T> {
   try {
     // Normaliza a URL removendo barra duplicada
+    const apiBaseUrl = getApiBaseUrl()
     const normalizedUrl = url.startsWith('/') ? url : `/${url}`
-    const fullUrl = `${API_BASE_URL}${normalizedUrl}`
+    const fullUrl = `${apiBaseUrl}${normalizedUrl}`
     
     const defaultHeaders: HeadersInit = {
       'Content-Type': 'application/json',
@@ -217,77 +216,134 @@ export async function updateCurrentUser(data: UpdateUserPayload): Promise<UserDa
   return getCurrentUser();
 }
 
-export async function solicitarRedefinicaoSenha(email: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/auth/esqueci-senha`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email }),
-  });
+// Helper para fetch com timeout
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = 30000): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('A requisição demorou muito para responder. Verifique sua conexão e tente novamente.');
+    }
+    throw error;
+  }
+}
 
-  if (!response.ok) {
-    let errorMessage = 'Erro ao solicitar redefinição de senha.';
-    try {
-      const contentType = response.headers.get('content-type');
-      const text = await response.text();
-      
-      if (contentType && contentType.includes('application/json') && text.trim()) {
-        try {
-          const errorData = JSON.parse(text);
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch (e) {
-          errorMessage = text || errorMessage;
+export async function solicitarRedefinicaoSenha(email: string): Promise<void> {
+  try {
+    const response = await fetchWithTimeout(
+      `${getApiBaseUrl()}/api/auth/esqueci-senha`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      },
+      30000 // 30 segundos de timeout
+    );
+
+    if (!response.ok) {
+      let errorMessage = 'Erro ao solicitar redefinição de senha.';
+      try {
+        const contentType = response.headers.get('content-type');
+        const text = await response.text();
+        
+        if (contentType && contentType.includes('application/json') && text.trim()) {
+          try {
+            const errorData = JSON.parse(text);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = text || errorMessage;
+          }
+        } else if (text) {
+          errorMessage = text;
+        } else {
+          errorMessage = `Erro ${response.status}: ${response.statusText}`;
         }
-      } else if (text) {
-        errorMessage = text;
-      } else {
+      } catch (e) {
         errorMessage = `Erro ${response.status}: ${response.statusText}`;
       }
-    } catch (e) {
-      errorMessage = `Erro ${response.status}: ${response.statusText}`;
+      throw new Error(errorMessage);
     }
-    throw new Error(errorMessage);
+  } catch (error) {
+    // Tratamento específico para erros de rede/timeout
+    if (error instanceof Error) {
+      if (error.message.includes('demorou muito') || error.message.includes('timeout')) {
+        throw new Error('A requisição demorou muito para responder. Verifique sua conexão e tente novamente.');
+      }
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Erro de conexão. Verifique sua internet e se a API está acessível.');
+      }
+      throw error;
+    }
+    throw new Error('Erro ao solicitar redefinição de senha. Tente novamente.');
   }
 }
 
 export async function redefinirSenha(token: string, novaSenha: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/auth/resetar-senha`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ token, novaSenha }),
-  });
+  try {
+    const response = await fetchWithTimeout(
+      `${getApiBaseUrl()}/api/auth/resetar-senha`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, novaSenha }),
+      },
+      30000 // 30 segundos de timeout
+    );
 
-  if (!response.ok) {
-    let errorMessage = 'Erro ao redefinir senha.';
-    try {
-      const contentType = response.headers.get('content-type');
-      const text = await response.text();
-      
-      if (contentType && contentType.includes('application/json') && text.trim()) {
-        try {
-          const errorData = JSON.parse(text);
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch (e) {
-          errorMessage = text || errorMessage;
+    if (!response.ok) {
+      let errorMessage = 'Erro ao redefinir senha.';
+      try {
+        const contentType = response.headers.get('content-type');
+        const text = await response.text();
+        
+        if (contentType && contentType.includes('application/json') && text.trim()) {
+          try {
+            const errorData = JSON.parse(text);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = text || errorMessage;
+          }
+        } else if (text) {
+          errorMessage = text;
+        } else {
+          errorMessage = `Erro ${response.status}: ${response.statusText}`;
         }
-      } else if (text) {
-        errorMessage = text;
-      } else {
+      } catch (e) {
         errorMessage = `Erro ${response.status}: ${response.statusText}`;
       }
-    } catch (e) {
-      errorMessage = `Erro ${response.status}: ${response.statusText}`;
+      throw new Error(errorMessage);
     }
-    throw new Error(errorMessage);
+  } catch (error) {
+    // Tratamento específico para erros de rede/timeout
+    if (error instanceof Error) {
+      if (error.message.includes('demorou muito') || error.message.includes('timeout')) {
+        throw new Error('A requisição demorou muito para responder. Verifique sua conexão e tente novamente.');
+      }
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Erro de conexão. Verifique sua internet e se a API está acessível.');
+      }
+      throw error;
+    }
+    throw new Error('Erro ao redefinir senha. Tente novamente.');
   }
 }
 
 export async function verifyEmail(codigo: string): Promise<{ message: string }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/verify?codigo=${encodeURIComponent(codigo)}`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/auth/verify?codigo=${encodeURIComponent(codigo)}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createProduto, updateProduto, uploadProdutoImagem, getProdutoById, type CategoriaProduto, type CondicaoProduto } from '../services/produtos';
 import { getCurrentUser } from '../services/auth';
 
+// Função lazy para obter a URL da API (só valida quando usar)
 const getApiBaseUrl = () => {
   const url = import.meta.env.VITE_API_URL
   if (!url) {
@@ -11,8 +12,6 @@ const getApiBaseUrl = () => {
   }
   return url.replace(/\/+$/, '')
 }
-
-const API_BASE_URL = getApiBaseUrl()
 
 type FormData = {
   title: string;
@@ -126,7 +125,7 @@ export default function Anunciar() {
         setFormData(newFormData);
 
         if (produto.imagem) {
-          const imageUrl = `${API_BASE_URL}/api/produtos/imagens/${encodeURIComponent(produto.imagem)}`;
+          const imageUrl = `${getApiBaseUrl()}/api/produtos/imagens/${encodeURIComponent(produto.imagem)}`;
           setPreviewUrl(imageUrl);
         }
       } catch (err) {

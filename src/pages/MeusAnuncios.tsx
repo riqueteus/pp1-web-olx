@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser } from '../services/auth';
 import { listProdutosUsuario, deleteProduto, markAsSold, type Produto, type StatusProduto } from '../services/produtos';
 
+// Função lazy para obter a URL da API (só valida quando usar)
 const getApiBaseUrl = () => {
   const url = import.meta.env.VITE_API_URL
   if (!url) {
@@ -10,8 +11,6 @@ const getApiBaseUrl = () => {
   }
   return url.replace(/\/+$/, '')
 }
-
-const API_BASE_URL = getApiBaseUrl()
 
 type TabType = 'published' | 'sold' | 'deleted';
 
@@ -88,10 +87,10 @@ export default function MeusAnuncios() {
     }
     
     if (imagem.startsWith('/')) {
-      return `${API_BASE_URL}${imagem}`;
+      return `${getApiBaseUrl()}${imagem}`;
     }
     
-    return `${API_BASE_URL}/api/produtos/imagens/${imagem}`;
+    return `${getApiBaseUrl()}/api/produtos/imagens/${imagem}`;
   };
 
   useEffect(() => {

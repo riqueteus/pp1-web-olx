@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { InputHTMLAttributes, ReactNode } from 'react'
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {

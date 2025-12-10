@@ -1,4 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+// Normaliza a URL removendo barra no final
+const getApiBaseUrl = () => {
+  const url = import.meta.env.VITE_API_URL || 'https://olx-pp1-api-production.up.railway.app'
+  return url.replace(/\/+$/, '') // Remove barras no final
+}
+
+const API_BASE_URL = getApiBaseUrl()
 
 export type RegisterVendorPayload = {
   nome: string
@@ -29,11 +35,15 @@ export type AuthResponse = {
 
 async function request<T>(url: string, options: RequestInit): Promise<T> {
   try {
+    // Normaliza a URL removendo barra duplicada
+    const normalizedUrl = url.startsWith('/') ? url : `/${url}`
+    const fullUrl = `${API_BASE_URL}${normalizedUrl}`
+    
     const defaultHeaders: HeadersInit = {
       'Content-Type': 'application/json',
     };
     
-    const response = await fetch(`${API_BASE_URL}${url}`, {
+    const response = await fetch(fullUrl, {
       headers: {
         ...defaultHeaders,
         ...options.headers,

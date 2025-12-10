@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser } from '../services/auth';
 import { listProdutosUsuario, deleteProduto, markAsSold, type Produto, type StatusProduto } from '../services/produtos';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://olx-pp1-api-production.up.railway.app').replace(/\/+$/, '');
 
 type TabType = 'published' | 'sold' | 'deleted';
 

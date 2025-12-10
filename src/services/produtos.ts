@@ -1,4 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+// Normaliza a URL removendo barra no final
+const getApiBaseUrl = () => {
+  const url = import.meta.env.VITE_API_URL || 'https://olx-pp1-api-production.up.railway.app'
+  return url.replace(/\/+$/, '') // Remove barras no final
+}
+
+const API_BASE_URL = getApiBaseUrl()
 
 export type CondicaoProduto = 'NOVO' | 'USADO'
 export type StatusProduto = 'ATIVO' | 'VENDIDO' | 'INATIVO'

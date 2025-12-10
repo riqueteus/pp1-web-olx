@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://167.71.123.166:8080'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
 export type CondicaoProduto = 'NOVO' | 'USADO'
 export type StatusProduto = 'ATIVO' | 'VENDIDO' | 'INATIVO'

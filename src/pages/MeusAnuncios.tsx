@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser } from '../services/auth';
 import { listProdutosUsuario, deleteProduto, markAsSold, type Produto, type StatusProduto } from '../services/produtos';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
 type TabType = 'published' | 'sold' | 'deleted';
 
 function ProductImage({ images, productName }: { images: string[]; productName: string }) {
@@ -78,10 +80,10 @@ export default function MeusAnuncios() {
     }
     
     if (imagem.startsWith('/')) {
-      return `http://localhost:8080${imagem}`;
+      return `${API_BASE_URL}${imagem}`;
     }
     
-    return `http://localhost:8080/api/produtos/imagens/${imagem}`;
+    return `${API_BASE_URL}/api/produtos/imagens/${imagem}`;
   };
 
   useEffect(() => {

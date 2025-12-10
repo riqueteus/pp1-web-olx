@@ -3,6 +3,7 @@ import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import RecuperacaoSenha from './pages/RecuperacaoSenha';
+import RedefinirSenha from './pages/RedefinirSenha';
 import VerificarEmail from './pages/VerificarEmail';
 import MeusAnuncios from './pages/MeusAnuncios';
 import Perfil from './pages/Perfil';
@@ -27,6 +28,7 @@ function App() {
         <Route path="/login" element={<MainLayout><Login /></MainLayout>} />
         <Route path="/cadastro" element={<Register />} />
         <Route path="/recuperacao-senha" element={<MainLayout><RecuperacaoSenha /></MainLayout>} />
+        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
         <Route path="/verificar-email" element={<VerificarEmail />} />
         
         <Route 

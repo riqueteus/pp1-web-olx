@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createProduto, updateProduto, uploadProdutoImagem, getProdutoById, type CategoriaProduto, type CondicaoProduto } from '../services/produtos';
 import { getCurrentUser } from '../services/auth';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
 type FormData = {
   title: string;
   description: string;
@@ -116,7 +118,7 @@ export default function Anunciar() {
         setFormData(newFormData);
 
         if (produto.imagem) {
-          const imageUrl = `http://localhost:8080/api/produtos/imagens/${encodeURIComponent(produto.imagem)}`;
+          const imageUrl = `${API_BASE_URL}/api/produtos/imagens/${encodeURIComponent(produto.imagem)}`;
           setPreviewUrl(imageUrl);
         }
       } catch (err) {

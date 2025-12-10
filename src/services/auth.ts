@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+const API_BASE_URL = 'http://167.71.123.166:8080'
 
 export type RegisterVendorPayload = {
   nome: string

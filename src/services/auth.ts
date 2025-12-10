@@ -1,6 +1,9 @@
 // Normaliza a URL removendo barra no final
 const getApiBaseUrl = () => {
-  const url = import.meta.env.VITE_API_URL || 'https://olx-pp1-api-production.up.railway.app'
+  const url = import.meta.env.VITE_API_URL
+  if (!url) {
+    throw new Error('VITE_API_URL não está configurada. Configure a variável de ambiente na Vercel.')
+  }
   return url.replace(/\/+$/, '') // Remove barras no final
 }
 

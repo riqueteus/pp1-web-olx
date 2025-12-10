@@ -3,7 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser } from '../services/auth';
 import { listProdutosUsuario, deleteProduto, markAsSold, type Produto, type StatusProduto } from '../services/produtos';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://olx-pp1-api-production.up.railway.app').replace(/\/+$/, '');
+const getApiBaseUrl = () => {
+  const url = import.meta.env.VITE_API_URL
+  if (!url) {
+    throw new Error('VITE_API_URL não está configurada. Configure a variável de ambiente na Vercel.')
+  }
+  return url.replace(/\/+$/, '')
+}
+
+const API_BASE_URL = getApiBaseUrl()
 
 type TabType = 'published' | 'sold' | 'deleted';
 

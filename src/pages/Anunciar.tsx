@@ -4,7 +4,15 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createProduto, updateProduto, uploadProdutoImagem, getProdutoById, type CategoriaProduto, type CondicaoProduto } from '../services/produtos';
 import { getCurrentUser } from '../services/auth';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://olx-pp1-api-production.up.railway.app').replace(/\/+$/, '');
+const getApiBaseUrl = () => {
+  const url = import.meta.env.VITE_API_URL
+  if (!url) {
+    throw new Error('VITE_API_URL não está configurada. Configure a variável de ambiente na Vercel.')
+  }
+  return url.replace(/\/+$/, '')
+}
+
+const API_BASE_URL = getApiBaseUrl()
 
 type FormData = {
   title: string;

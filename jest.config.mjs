@@ -12,15 +12,6 @@ export default {
   transformIgnorePatterns: [
     '/node_modules/(?!(react-dnd|dnd-core|@react-dnd|@babel|@testing-library|@react-hook|react-hook-form|react-markdown|vfile|vfile-message|markdown-table|unist-.*|unified|bail|remark-.*|mdast-util-.*|escape-string-regexp|character-entities|property-information|hast-util-whitespace|space-separated-tokens|comma-separated-tokens|pretty-bytes|ccount)/)',
   ],
-  collectCoverage: true,
-  collectCoverageFrom: [
-    'src/**/*.{js,jsx,ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/main.tsx',
-    '!src/vite-env.d.ts',
-  ],
-  coverageReporters: ['json', 'lcov', 'text', 'clover'],
-  coverageDirectory: 'coverage',
   testMatch: [
     '**/__tests__/**/*.[jt]s?(x)',
     '**/?(*.)+(spec|test).[tj]s?(x)',

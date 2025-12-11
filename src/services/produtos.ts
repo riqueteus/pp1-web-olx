@@ -176,7 +176,7 @@ export async function updateProduto(produtoId: number, data: UpdateProdutoPayloa
   return getProdutoById(produtoId);
 }
 
-export async function deleteProduto(produtoId: number): Promise<Produto> {
+export async function inativarProduto(produtoId: number): Promise<void> {
   const response = await fetch(`${getApiBaseUrl()}/api/produtos/${produtoId}/inativo`, {
     method: 'PUT',
     headers: getAuthHeaders(),
@@ -192,16 +192,6 @@ export async function deleteProduto(produtoId: number): Promise<Produto> {
     }
     throw new Error(errorMessage);
   }
-
-  const contentType = response.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    const text = await response.text();
-    if (text.trim()) {
-      return JSON.parse(text);
-    }
-  }
-  
-  return getProdutoById(produtoId);
 }
 
 export async function markAsSold(produtoId: number): Promise<Produto> {

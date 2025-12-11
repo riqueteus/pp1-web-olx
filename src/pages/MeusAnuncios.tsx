@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser } from '../services/auth';
-import { listProdutosUsuario, deleteProduto, markAsSold, type Produto, type StatusProduto } from '../services/produtos';
+import { listProdutosUsuario, inativarProduto, markAsSold, type Produto, type StatusProduto } from '../services/produtos';
 
 // Função lazy para obter a URL da API (só valida quando usar)
 const getApiBaseUrl = () => {
@@ -12,7 +12,7 @@ const getApiBaseUrl = () => {
   return url.replace(/\/+$/, '')
 }
 
-type TabType = 'published' | 'sold' | 'deleted';
+type TabType = 'published' | 'sold' | 'inactive';
 
 function ProductImage({ images, productName }: { images: string[]; productName: string }) {
   const imageUrl = images && images.length > 0 ? images[0] : null;
@@ -75,7 +75,7 @@ export default function MeusAnuncios() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showInativarModal, setShowInativarModal] = useState(false);
   const [showSoldModal, setShowSoldModal] = useState(false);
   const [selectedProdutoId, setSelectedProdutoId] = useState<number | null>(null);
 
@@ -133,26 +133,31 @@ export default function MeusAnuncios() {
     }
   };
 
-  const handleDeleteClick = (produtoId: number) => {
+  const handleInativarClick = (produtoId: number) => {
     setSelectedProdutoId(produtoId);
-    setShowDeleteModal(true);
+    setShowInativarModal(true);
   };
 
-  const handleDelete = async () => {
+  const handleInativar = async () => {
     if (!selectedProdutoId) return;
 
     try {
-      const updatedProduto = await deleteProduto(selectedProdutoId);
+      await inativarProduto(selectedProdutoId);
+      // Atualiza o status do produto localmente para INATIVO
       const updatedProdutos = produtos.map(p => 
-        p.id === selectedProdutoId ? updatedProduto : p
+        p.id === selectedProdutoId ? { ...p, status: 'INATIVO' as StatusProduto } : p
       );
       setProdutos(updatedProdutos);
-      setShowDeleteModal(false);
+      setShowInativarModal(false);
       setSelectedProdutoId(null);
     } catch (err) {
       console.error('Erro ao deixar produto como inativo:', err);
-      alert('Erro ao deixar anúncio como inativo. Tente novamente.');
-      setShowDeleteModal(false);
+      if (err instanceof Error) {
+        alert(`Erro ao deixar anúncio como inativo: ${err.message}`);
+      } else {
+        alert('Erro ao deixar anúncio como inativo. Tente novamente.');
+      }
+      setShowInativarModal(false);
       setSelectedProdutoId(null);
     }
   };
@@ -262,14 +267,14 @@ export default function MeusAnuncios() {
                 Vendidos
               </button>
               <button
-                onClick={() => setActiveTab('deleted')}
+                onClick={() => setActiveTab('inactive')}
                 className={`${
-                  activeTab === 'deleted'
+                  activeTab === 'inactive'
                     ? 'border-orange-500 text-orange-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm cursor-pointer`}
               >
-                Excluídos
+                Inativos
               </button>
             </nav>
           </div>
@@ -378,7 +383,7 @@ export default function MeusAnuncios() {
                                       Marcar como vendido
                                     </button>
                                     <button
-                                      onClick={() => handleDeleteClick(produto.id!)}
+                                      onClick={() => handleInativarClick(produto.id!)}
                                       className="px-6 py-2 text-sm font-medium text-white bg-red-400 hover:bg-red-800 rounded-md transition-colors cursor-pointer"
                                     >
                                       Deixar como inativo
@@ -460,7 +465,7 @@ export default function MeusAnuncios() {
                   </>
                 )}
 
-                {activeTab === 'deleted' && (
+                {activeTab === 'inactive' && (
                   <>
                     {filteredProdutos.length === 0 ? (
                       <div className="text-center py-12">
@@ -531,7 +536,7 @@ export default function MeusAnuncios() {
         </div>
       </main>
 
-      {showDeleteModal && (
+      {showInativarModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Deixar anúncio como inativo</h3>
@@ -540,7 +545,7 @@ export default function MeusAnuncios() {
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => {
-                  setShowDeleteModal(false);
+                  setShowInativarModal(false);
                   setSelectedProdutoId(null);
                 }}
                 className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
@@ -548,7 +553,7 @@ export default function MeusAnuncios() {
                 Cancelar
               </button>
               <button
-                onClick={handleDelete}
+                onClick={handleInativar}
                 className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
               >
                 Deixar como inativo

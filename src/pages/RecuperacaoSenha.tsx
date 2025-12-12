@@ -58,7 +58,7 @@ function RecuperacaoSenha() {
                 <div className="bg-green-50 border border-green-200 rounded-md p-4 text-center">
                   <p className="text-green-800 font-medium">E-mail enviado com sucesso!</p>
                   <p className="text-green-700 text-sm mt-1">
-                    Verifique sua caixa de entrada e siga as instruções para redefinir sua senha.
+                    Verifique sua caixa de entrada ou no spam e siga as instruções para redefinir sua senha.
                   </p>
                 </div>
                 <Link to="/login">

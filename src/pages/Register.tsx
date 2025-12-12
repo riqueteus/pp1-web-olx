@@ -263,7 +263,7 @@ function Register() {
         message: (
           <>
             Um email de verificação foi enviado para <strong>{email}</strong>. 
-            Por favor, verifique sua caixa de entrada e clique no link para ativar sua conta.
+            Verifique sua caixa de entrada ou no spam e ative sua conta.
           </>
         ),
         showFor: 15000
@@ -274,11 +274,26 @@ function Register() {
       let errorMessage = 'Ocorreu um erro ao processar seu cadastro. Por favor, tente novamente.'
       
       if (err instanceof Error) {
-        if (err.message.includes('already exists') || err.message.includes('já existe') || err.message.toLowerCase().includes('email')) {
-          errorMessage = 'Já existe uma conta cadastrada com este e-mail. Por favor, faça login ou utilize outro e-mail.';
-        } else if (err.message.includes('senha') || err.message.includes('password')) {
+        const errorMsg = err.message.toLowerCase()
+        
+        const isDuplicate = errorMsg.includes('já existe') || 
+                           errorMsg.includes('already exists') || 
+                           errorMsg.includes('duplicado') || 
+                           errorMsg.includes('duplicate') || 
+                           errorMsg.includes('cadastrado') ||
+                           errorMsg.includes('já cadastrado') ||
+                           errorMsg.includes('cpf') ||
+                           errorMsg.includes('cnpj') ||
+                           errorMsg.includes('email') ||
+                           errorMsg.includes('e-mail')
+        
+        if (isDuplicate) {
+          errorMessage = 'O CPF/CNPJ ou o e-mail informado já está cadastrado. Por favor, verifique os dados ou faça login.';
+        }
+        // Verifica outros tipos de erro
+        else if (errorMsg.includes('senha') || errorMsg.includes('password')) {
           errorMessage = 'A senha não atende aos requisitos mínimos. Por favor, verifique as regras de senha.';
-        } else if (err.message.includes('inválido') || err.message.includes('inválida')) {
+        } else if (errorMsg.includes('inválido') || errorMsg.includes('inválida')) {
           errorMessage = 'Dados inválidos. Verifique as informações fornecidas e tente novamente.'
         } else {
           errorMessage = err.message

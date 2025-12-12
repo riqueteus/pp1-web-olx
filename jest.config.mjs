@@ -17,4 +17,12 @@ export default {
     '**/?(*.)+(spec|test).[tj]s?(x)',
   ],
   moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
+  collectCoverageFrom: [
+    'src/**/*.{js,jsx,ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/__tests__/**',
+    '!src/**/__mocks__/**',
+    '!src/main.tsx',
+    '!src/vite-env.d.ts',
+  ],
 };

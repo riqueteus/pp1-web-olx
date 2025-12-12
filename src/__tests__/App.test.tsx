@@ -8,6 +8,17 @@ jest.mock('../utils/auth', () => ({
   isAuthenticated: jest.fn(() => false),
 }));
 
+// Mock do serviço de autenticação para evitar problemas com import.meta.env
+jest.mock('../services/auth', () => ({
+  login: jest.fn(),
+  registerVendor: jest.fn(),
+  getCurrentUser: jest.fn(),
+  updateCurrentUser: jest.fn(),
+  solicitarRedefinicaoSenha: jest.fn(),
+  redefinirSenha: jest.fn(),
+  verifyEmail: jest.fn(),
+}));
+
 // Mock do BrowserRouter para usar MemoryRouter nos testes
 jest.mock('react-router-dom', () => {
   const actual = jest.requireActual('react-router-dom');

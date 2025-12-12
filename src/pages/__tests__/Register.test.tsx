@@ -557,7 +557,7 @@ describe('Register Component', () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/Já existe uma conta cadastrada/i)).toBeInTheDocument();
+      expect(screen.getByText(/O CPF\/CNPJ ou o e-mail informado já está cadastrado/i)).toBeInTheDocument();
     });
   });
 

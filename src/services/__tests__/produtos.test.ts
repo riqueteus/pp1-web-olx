@@ -1,6 +1,6 @@
 // Mock do import.meta.env - deve estar antes do import
 // O jest.setup.js já faz isso, mas garantimos aqui também
-if (typeof globalThis.import === 'undefined') {
+if (typeof (globalThis as any).import === 'undefined') {
   Object.defineProperty(globalThis, 'import', {
     value: {
       meta: {
@@ -472,3 +472,4 @@ describe('Produtos Service', () => {
     });
   });
 });
+

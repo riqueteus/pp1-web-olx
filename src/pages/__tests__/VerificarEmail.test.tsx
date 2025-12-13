@@ -27,7 +27,6 @@ describe('VerificarEmail Component', () => {
   });
 
   it('deve renderizar o logo', () => {
-    const { useSearchParams } = require('react-router-dom');
     jest.spyOn(require('react-router-dom'), 'useSearchParams').mockReturnValue([
       new URLSearchParams('?codigo=123'),
       jest.fn(),
@@ -43,7 +42,6 @@ describe('VerificarEmail Component', () => {
   });
 
   it('deve exibir loading inicialmente', () => {
-    const { useSearchParams } = require('react-router-dom');
     jest.spyOn(require('react-router-dom'), 'useSearchParams').mockReturnValue([
       new URLSearchParams('?codigo=123'),
       jest.fn(),
@@ -63,7 +61,6 @@ describe('VerificarEmail Component', () => {
   });
 
   it('deve exibir sucesso quando código é válido', async () => {
-    const { useSearchParams } = require('react-router-dom');
     jest.spyOn(require('react-router-dom'), 'useSearchParams').mockReturnValue([
       new URLSearchParams('?codigo=123'),
       jest.fn(),
@@ -87,7 +84,6 @@ describe('VerificarEmail Component', () => {
   });
 
   it('deve exibir erro quando código não é fornecido', async () => {
-    const { useSearchParams } = require('react-router-dom');
     jest.spyOn(require('react-router-dom'), 'useSearchParams').mockReturnValue([
       new URLSearchParams(''),
       jest.fn(),
@@ -106,7 +102,6 @@ describe('VerificarEmail Component', () => {
   });
 
   it('deve exibir erro quando verificação falha', async () => {
-    const { useSearchParams } = require('react-router-dom');
     jest.spyOn(require('react-router-dom'), 'useSearchParams').mockReturnValue([
       new URLSearchParams('?codigo=123'),
       jest.fn(),
@@ -129,7 +124,6 @@ describe('VerificarEmail Component', () => {
   });
 
   it('deve navegar para login ao clicar em "Ir para Login" no sucesso', async () => {
-    const { useSearchParams } = require('react-router-dom');
     jest.spyOn(require('react-router-dom'), 'useSearchParams').mockReturnValue([
       new URLSearchParams('?codigo=123'),
       jest.fn(),
@@ -158,7 +152,6 @@ describe('VerificarEmail Component', () => {
   });
 
   it('deve navegar para login ao clicar em "Ir para Login" no erro', async () => {
-    const { useSearchParams } = require('react-router-dom');
     jest.spyOn(require('react-router-dom'), 'useSearchParams').mockReturnValue([
       new URLSearchParams('?codigo=123'),
       jest.fn(),
@@ -188,7 +181,6 @@ describe('VerificarEmail Component', () => {
   });
 
   it('deve navegar para cadastro ao clicar em "Fazer Cadastro" no erro', async () => {
-    const { useSearchParams } = require('react-router-dom');
     jest.spyOn(require('react-router-dom'), 'useSearchParams').mockReturnValue([
       new URLSearchParams('?codigo=123'),
       jest.fn(),
@@ -217,7 +209,6 @@ describe('VerificarEmail Component', () => {
   });
 
   it('deve exibir mensagem de erro genérica quando erro não é Error', async () => {
-    const { useSearchParams } = require('react-router-dom');
     jest.spyOn(require('react-router-dom'), 'useSearchParams').mockReturnValue([
       new URLSearchParams('?codigo=123'),
       jest.fn(),

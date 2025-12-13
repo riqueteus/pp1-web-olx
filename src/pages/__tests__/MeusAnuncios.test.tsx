@@ -298,7 +298,6 @@ describe('MeusAnuncios Component', () => {
     });
 
     // Encontra o botão de confirmação no modal (não o botão que abre o modal)
-    const modal = screen.getByText(/Tem certeza que deseja marcar este anúncio como vendido/i).closest('div');
     const confirmButton = Array.from(screen.getAllByText(/Marcar como vendido/i)).find(
       btn => {
         const button = btn.closest('button');

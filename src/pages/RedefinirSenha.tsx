@@ -113,11 +113,6 @@ function RedefinirSenha() {
                   Solicitar novo link
                 </Button>
               </Link>
-              <p className="text-sm text-gray-600 text-center">
-                <Link to="/login" className="text-purple-600 hover:text-purple-700 font-semibold hover:underline">
-                  Voltar para o login
-                </Link>
-              </p>
             </div>
           </Card>
         </div>
@@ -134,18 +129,10 @@ function RedefinirSenha() {
               <img src={olxLogo} alt="OLX" className="h-12 w-auto" />
               <div className="text-center space-y-2">
                 <h1 className="font-bold text-lg">Senha redefinida com sucesso!</h1>
-                <p className="text-gray-700">
-                  Sua senha foi alterada com sucesso.
-                </p>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-md p-4 text-center w-full">
-                <p className="text-green-800 font-medium">✓ Senha alterada com sucesso</p>
+                <p className="text-green-800 font-medium">✓ Senha alterada com sucesso, Acesso novamente o login. </p>
               </div>
-              <Link to="/login">
-                <Button type="button" className="bg-orange-500 hover:bg-orange-600 text-white w-full cursor-pointer">
-                  Ir para o login
-                </Button>
-              </Link>
             </div>
           </Card>
         </div>

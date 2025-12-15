@@ -79,7 +79,7 @@ describe('VerificarEmail Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/Conta Ativada/i)).toBeInTheDocument();
       expect(screen.getByText(/Sua conta foi ativada com sucesso/i)).toBeInTheDocument();
-      expect(screen.getByText(/Ir para Login/i)).toBeInTheDocument();
+      expect(screen.getByText(/Agora faça o login para acessar/i)).toBeInTheDocument();
     });
   });
 
@@ -123,7 +123,7 @@ describe('VerificarEmail Component', () => {
     });
   });
 
-  it('deve navegar para login ao clicar em "Ir para Login" no sucesso', async () => {
+  it('deve exibir mensagem de sucesso sem botão de navegação', async () => {
     jest.spyOn(require('react-router-dom'), 'useSearchParams').mockReturnValue([
       new URLSearchParams('?codigo=123'),
       jest.fn(),
@@ -140,14 +140,10 @@ describe('VerificarEmail Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Ir para Login/i)).toBeInTheDocument();
-    });
-
-    const loginButton = screen.getByText(/Ir para Login/i);
-    loginButton.click();
-
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/login');
+      expect(screen.getByText(/Conta Ativada/i)).toBeInTheDocument();
+      expect(screen.getByText(/Agora faça o login para acessar/i)).toBeInTheDocument();
+      // Não há botão na tela de sucesso
+      expect(screen.queryByText(/Ir para Login/i)).not.toBeInTheDocument();
     });
   });
 

@@ -76,15 +76,9 @@ function VerificarEmail() {
                   </svg>
                 </div>
                 <div className="text-center space-y-2">
-                  <h1 className="text-2xl font-bold text-gray-900">Conta Ativada!</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">Conta Ativada! Agora faça o login para acessar.</h1>
                   <p className="text-gray-600">{message}</p>
                 </div>
-                <Button
-                  onClick={() => navigate('/login')}
-                  className="bg-orange-500 hover:bg-orange-600 text-white w-full"
-                >
-                  Ir para Login
-                </Button>
               </>
             )}
 

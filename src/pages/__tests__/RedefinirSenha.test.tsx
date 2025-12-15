@@ -185,8 +185,7 @@ describe('RedefinirSenha Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Senha redefinida com sucesso/i)).toBeInTheDocument();
-      expect(screen.getByText(/Sua senha foi alterada com sucesso/i)).toBeInTheDocument();
-      expect(screen.getByText(/Ir para o login/i)).toBeInTheDocument();
+      expect(screen.getByText(/Senha alterada com sucesso, Acesso novamente o login/i)).toBeInTheDocument();
     });
   });
 
